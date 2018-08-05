@@ -6,7 +6,7 @@ import threading
 import math
 import time
 import pigpio
-import sys 
+import os
 
 pin_sb = 22
 gpio_pin0 = 12
@@ -70,13 +70,19 @@ def cal_gps(radius, goal_latitude, goal_longitude, now_lat, now_lon):
 
 def rungps(): # GPSモジュールを読み、GPSオブジェクトを更新する
 
-    s.readline() # 最初の1行は中途半端なデーターが読めることがあるので、捨てる
-    while True:
-        sentence = s.readline().decode('utf-8') # GPSデーターを読み、文字列に変換する
-        if sentence[0] != '$': # 先頭が'$'でなければ捨てる
-            continue
-        for x in sentence: # 読んだ文字列を解析してGPSオブジェクトにデーターを追加、更新する
-            gps.update(x)
+	try:
+
+	    	s.readline() # 最初の1行は中途半端なデーターが読めることがあるので、捨てる
+    		while True:
+        		sentence = s.readline().decode('utf-8') # GPSデーターを読み、文字列に変換する
+
+       			if sentence[0] != '$': # 先頭が'$'でなければ捨てる
+            			continue
+        		for x in sentence: # 読んだ文字列を解析してGPSオブジェクトにデーターを追加、更新する
+            			gps.update(x)
+	except UnicodeDecodeError:
+		print('ERROR')
+		rungps()
 
 gpsthread = threading.Thread(target=rungps, args=()) # 上の関数を実行するスレッドを生成
 gpsthread.daemon = True
@@ -99,14 +105,25 @@ def get_gps():
 	else:
 		pi.write(led2, 0)
 		return 0, 0, 30, 0
+
+def cb_interrupt(gpio, level, tick):
+	print('THE END')
+	print (gpio, level, tick)
+	pi.set_PWM_dutycycle(pin_sb, 0)
+	pi.write(led1, 0)
+	pi.write(led2, 0)
+	pi.write(led3, 0)
+	pi.write(led3, 0)
+	os._exit(1)
+
+
 pi.write(in1, 1)
 pi.write(in2, 0)
 pi.set_PWM_dutycycle(pin_sb, 255)
 
 while True:
 
-	if s.read(end) == 0:
-		sys.exit()
+	cb = pi.callback(end, pigpio.FALLING_EDGE, cb_interrupt)
 
 	num = get_gps()
 	if num[0] > 2:
