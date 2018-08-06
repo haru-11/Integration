@@ -119,36 +119,57 @@ def cb_interrupt(gpio, level, tick):
 
 pi.write(in1, 1)
 pi.write(in2, 0)
-pi.set_PWM_dutycycle(pin_sb, 255)
+#pi.set_PWM_dutycycle(pin_sb, 50)
+#time.sleep(2.0)
+#pi.set_PWM_dutycycle(pin_sb, 100)
+#time.sleep(2.0)
+#pi.set_PWM_dutycycle(pin_sb, 150)
+#time.sleep(2.0)
+#pi.set_PWM_dutycycle(pin_sb, 200)
+#time.sleep(2.0)
+#pi.set_PWM_dutycycle(pin_sb, 255)
+i = 50
+try:
 
-while True:
+	while True:
 
-	cb = pi.callback(end, pigpio.FALLING_EDGE, cb_interrupt)
+		cb = pi.callback(end, pigpio.FALLING_EDGE, cb_interrupt)
 
-	num = get_gps()
-	if num[0] > 2:
-		pi.write(led3, 1)
-		if num[1]-num[3] < 10:
-			pi.hardware_PWM(gpio_pin0, 50,( 1.0/20.0) * 1000000)
-		elif num[1]-num[3] < -10:
-			pi.hardware_PWM(gpio_pin0, 50,( 2.0/20.0) * 1000000)
-		else:
-			pi.hardware_PWM(gpio_pin0, 50,( 1.5/20.0) * 1000000)
+		num = get_gps()
+		pi.set_PWM_dutycycle(pin_sb, i)
+		i = i +10
+		if i == 250:
+			i = 50
+		if num[1] > 2:
+			pi.set_PWM_dutycycle(pin_sb, 200)
+			pi.write(led3, 1)
+			if num[0]-num[3] < 10:
+				pi.hardware_PWM(gpio_pin0, 50,( 1.0/20.0) * 1000000)
+			elif num[0]-num[3] < -10:
+				pi.hardware_PWM(gpio_pin0, 50,( 2.0/20.0) * 1000000)
+			else:
+				pi.hardware_PWM(gpio_pin0, 50,( 1.5/20.0) * 1000000)
 
-	if num[2] < 0.01:
-		pi.write(in1, 0)
-		pi.write(in2, 0)
-		pi.set_PWM_dutycycle(pin_sb, 0)
-		s.write("GOAL!!!")
-		print("goal!!")
-		pi.write(led1, 0)
-		pi.write(led2, 0)
-		pi.write(led3, 0)
-		pi.write(led3, 0)
-	print("To goal:"+str(num[2])+"[m]")
-	print("To goal:"+str(num[3])+"[deg]")
-	print("now:"+str(num[1])+"[m/s]")
-	print("now:"+str(num[0])+"[deg]")
-	s.write("To goal:"+str(num[2])+"[m]")
-	s.write("To goal:"+str(num[3])+"[deg]")
-	time.sleep(1)
+		if num[2] < 0.01:
+			pi.write(in1, 0)
+			pi.write(in2, 0)
+			pi.set_PWM_dutycycle(pin_sb, 0)
+			s.write("GOAL!!!")
+			print("goal!!")
+			pi.write(led1, 0)
+			pi.write(led2, 0)
+			pi.write(led3, 0)
+			pi.write(led3, 0)
+		print("To goal:"+str(num[2])+"[m]")
+		print("To goal:"+str(num[3])+"[deg]")
+		print("now:"+str(num[1])+"[m/s]")
+		print("now:"+str(num[0])+"[deg]")
+		s.write("To goal:"+str(num[2])+"[m]")
+		s.write("To goal:"+str(num[3])+"[deg]")
+		time.sleep(1)
+except KeyboardInterrupt:
+			pi.set_PWM_dutycycle(pin_sb, 0)
+        		pi.write(led1, 0)
+       	 		pi.write(led2, 0)
+        		pi.write(led3, 0)
+        		pi.write(led3, 0)
