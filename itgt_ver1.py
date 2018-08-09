@@ -7,6 +7,8 @@ import math
 import time
 import pigpio
 import os
+import mpu9250_1
+import numpy as np
 
 pin_sb = 22
 gpio_pin0 = 12
@@ -17,6 +19,7 @@ led2 = 24
 led3 = 23
 led4 = 18
 end = 21
+x_angle = 0.0
 
 pi = 3.1415926535
 goal_latitude = 35.661276	#ゴールの緯度（10進法，南緯は負の数）
@@ -25,6 +28,13 @@ radius = 6378.137	#地球の半径km
 
 gps = micropyGPS.MicropyGPS(9, 'dd') # MicroGPSオブジェクトを生成する。
                                      # 引数はタイムゾーンの時差と出力フォーマット
+mpu = mpu9250_1.SL_MPU9250(0x69,1)
+
+mpu.resetRegister()
+mpu.powerWakeUp()
+mpu.setAccelRange(8,True)
+mpu.setGyroRange(1000,True)
+mpu.setMagRegister('1000Hz','16bit')
 
 pi = pigpio.pi()
 pi.set_mode(gpio_pin0, pigpio.OUTPUT)
@@ -51,8 +61,9 @@ pi.write(led2, 0)
 pi.write(led3, 0)
 pi.write(led4, 0)
 
-s = serial.Serial('/dev/serial0', 9600, timeout=10)
+s = serial.Serial('/dev/serial0', 115200, timeout=10)
 
+x_angle = 0
 def cal_gps(radius, goal_latitude, goal_longitude, now_lat, now_lon):
 	#度をラジアンに変換
 	delta_lon = math.radians(goal_longitude - now_lon)
@@ -88,6 +99,51 @@ gpsthread = threading.Thread(target=rungps, args=()) # 上の関数を実行す�
 gpsthread.daemon = True
 gpsthread.start() # スレッドを起動
 
+def get_axis():
+	global x_angle
+	while True:
+
+        	i = 0
+        	data_accx = [0]
+        	data_accy = [0]
+        	data_accz = [0]
+        	while True:
+			now = time.time()
+                	acc = mpu.getAccel()
+                	data_accx.append(acc[0])
+                	data_accy.append(acc[1])
+                	data_accz.append(acc[2])
+
+                	if i == 10:
+                        	medianx = np.median(data_accx)
+                        	mediany = np.median(data_accy)
+                        	medianz = np.median(data_accz)
+                        	break
+                	i = i + 1
+	        	sleepTime = 0.05 - (time.time() - now)
+        		if sleepTime < 0.0:
+                		continue
+        		time.sleep(sleepTime)
+        	#gyr = mpu.getGyro()
+        	#mag = mpu.getMag()
+
+        	#x_angle = math.degrees( math.atan2( acc[0], math.sqrt(acc[1] ** 2 + acc[2] ** 2 )))
+        	#y_angle = math.degrees( math.atan2( acc[1], math.sqrt(acc[0] ** 2 + acc[2] ** 2 )))
+        	x_angle = math.degrees( math.atan2( medianx, math.sqrt(mediany ** 2 + medianz ** 2 )))
+		if medianz>0:
+			x_angle = (90-x_angle) + 90
+        	y_angle = math.degrees( math.atan2( mediany, math.sqrt(medianx ** 2 + medianz ** 2 )))
+#		print('x:'+ str(x_angle))
+#       	 print('y:'+ str(y_angle))
+#       	print('s:'+ str(sita))
+#       	print ('%+8.7f,%+8.7f,%+8.7f' % (mag[0],mag[1],mag[2]))
+#       	time.sleep(1.0)
+
+
+mputhread = threading.Thread(target=get_axis, args=()) # 上の関数を実行するスレッドを生成
+mputhread.daemon = True
+mputhread.start() # スレッドを起動
+
 def get_gps():
 
 	if gps.clean_sentences > 20: # ちゃんとしたデーターがある程度たまったら出力する
@@ -117,8 +173,8 @@ def cb_interrupt(gpio, level, tick):
 	os._exit(1)
 
 
-pi.write(in1, 1)
-pi.write(in2, 0)
+pi.write(in1, 0)
+pi.write(in2, 1)
 #pi.set_PWM_dutycycle(pin_sb, 50)
 #time.sleep(2.0)
 #pi.set_PWM_dutycycle(pin_sb, 100)
@@ -129,6 +185,8 @@ pi.write(in2, 0)
 #time.sleep(2.0)
 #pi.set_PWM_dutycycle(pin_sb, 255)
 i = 50
+
+#pi.set_PWM_dutycycle(pin_sb, 255)
 try:
 
 	while True:
@@ -136,10 +194,23 @@ try:
 		cb = pi.callback(end, pigpio.FALLING_EDGE, cb_interrupt)
 
 		num = get_gps()
-		pi.set_PWM_dutycycle(pin_sb, i)
-		i = i +10
-		if i == 250:
-			i = 50
+		if x_angle < 90:
+			i= i+8
+			if i > 250:
+				i = 255
+			pi.set_PWM_dutycycle(pin_sb, i)
+		elif x_angle > 90 and x_angle < 200:
+			i = i-10
+			if i < 0:
+				i = 50
+			pi.set_PWM_dutycycle(pin_sb, i)
+		else:
+			pi.write(in1, 0)
+                        pi.write(in2, 0)
+			time.sleep(1)
+			pi.write(in1, 0)
+                        pi.write(in2, 1)
+
 		if num[1] > 2:
 			pi.set_PWM_dutycycle(pin_sb, 200)
 			pi.write(led3, 1)
@@ -164,9 +235,13 @@ try:
 		print("To goal:"+str(num[3])+"[deg]")
 		print("now:"+str(num[1])+"[m/s]")
 		print("now:"+str(num[0])+"[deg]")
+		print("x_angle:"+str(x_angle))
+		print("duty:"+ str(i))
 		s.write("To goal:"+str(num[2])+"[m]")
 		s.write("To goal:"+str(num[3])+"[deg]")
-		time.sleep(1)
+                s.write("x_angle:"+str(x_angle))
+                s.write("duty:"+ str(i))
+		time.sleep(0.5)
 except KeyboardInterrupt:
 			pi.set_PWM_dutycycle(pin_sb, 0)
         		pi.write(led1, 0)
