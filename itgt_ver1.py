@@ -28,7 +28,7 @@ radius = 6378.137	#地球の半径km
 
 gps = micropyGPS.MicropyGPS(9, 'dd') # MicroGPSオブジェクトを生成する。
                                      # 引数はタイムゾーンの時差と出力フォーマット
-mpu = mpu9250_1.SL_MPU9250(0x69,1)
+mpu = mpu9250_1.SL_MPU9250(0x68,1)
 
 mpu.resetRegister()
 mpu.powerWakeUp()
@@ -62,7 +62,7 @@ pi.write(led3, 0)
 pi.write(led4, 0)
 
 s = serial.Serial('/dev/serial0', 115200, timeout=10)
-
+s.write("serial ok!\r\n")
 x_angle = 0
 def cal_gps(radius, goal_latitude, goal_longitude, now_lat, now_lon):
 	#度をラジアンに変換
@@ -164,6 +164,7 @@ def get_gps():
 
 def cb_interrupt(gpio, level, tick):
 	print('THE END')
+	s.write("THE END\r\n")
 	print (gpio, level, tick)
 	pi.set_PWM_dutycycle(pin_sb, 0)
 	pi.write(led1, 0)
@@ -190,7 +191,7 @@ i = 50
 try:
 
 	while True:
-
+		now = time.time()
 		cb = pi.callback(end, pigpio.FALLING_EDGE, cb_interrupt)
 
 		num = get_gps()
@@ -225,7 +226,7 @@ try:
 			pi.write(in1, 0)
 			pi.write(in2, 0)
 			pi.set_PWM_dutycycle(pin_sb, 0)
-			s.write("GOAL!!!")
+			s.write("GOAL!!!\r\n")
 			print("goal!!")
 			pi.write(led1, 0)
 			pi.write(led2, 0)
@@ -237,14 +238,19 @@ try:
 		print("now:"+str(num[0])+"[deg]")
 		print("x_angle:"+str(x_angle))
 		print("duty:"+ str(i))
-		s.write("To goal:"+str(num[2])+"[m]")
-		s.write("To goal:"+str(num[3])+"[deg]")
-                s.write("x_angle:"+str(x_angle))
-                s.write("duty:"+ str(i))
-		time.sleep(0.5)
+		s.write("To goal:"+str(num[2])+"[m]"+str(num[3])+"[deg]\r\n")
+		time.sleep(0.15)
+		s.write("now:"+str(num[1])+"[m/s]"+str(num[0])+"[deg]\r\n")
+		time.sleep(0.15)
+                s.write("x_angle:"+str(x_angle)+"duty:"+ str(i)"\r\n")
+		sleepTime = 0.5 - (time.time() - now)
+		if sleepTime < 0.0:
+			continue
+		time.sleep(sleepTime)
 except KeyboardInterrupt:
 			pi.set_PWM_dutycycle(pin_sb, 0)
         		pi.write(led1, 0)
        	 		pi.write(led2, 0)
         		pi.write(led3, 0)
         		pi.write(led3, 0)
+			s.write("KeyboardInterrupt,close(serial)\r\n")
