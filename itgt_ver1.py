@@ -61,9 +61,23 @@ pi.write(led2, 0)
 pi.write(led3, 0)
 pi.write(led4, 0)
 
+time.sleep(1.0)
 s = serial.Serial('/dev/serial0', 115200, timeout=10)
 s.write("serial ok!\r\n")
 x_angle = 0
+
+class MCP3002:
+
+	def __init__(self):
+		pi = pigpio.pi()
+		self.h = pi.spi_open(0, 75000, 0)
+
+	def get_ADC(self):
+		c, d =pi.spi_xfer(self.h,[0x68,0x00])
+		return (d[0]<<8)+d[1]
+
+adc =  MCP3002()
+
 def cal_gps(radius, goal_latitude, goal_longitude, now_lat, now_lon):
 	#度をラジアンに変換
 	delta_lon = math.radians(goal_longitude - now_lon)
@@ -157,7 +171,7 @@ def get_gps():
 		#print('距離: %f' % cal[0])
 		#print('方位角: %f' % cal[1])
 		pi.write(led2, 1)
-		return gps.course, gps.speed[1], cal[0], cal[1]
+		return gps.course, gps.speed[1], cal[0], cal[1],gps.latitude[0], gps.longitude[0]
 	else:
 		pi.write(led2, 0)
 		return 0, 0, 30, 0
@@ -173,7 +187,20 @@ def cb_interrupt(gpio, level, tick):
 	pi.write(led3, 0)
 	os._exit(1)
 
+i = 30
+while i > 0:
+        d = adc.get_ADC()
+        s.write(str(i)+"sec,"+str(d)+"\r\n")
+        i = i - 1
+        time.sleep(1)
+while True:
+        d = adc.get_ADC()
+        s.write(str(d)+"\r\n")
+        if d > 100:
+                break
+        time.sleep(1.0)
 
+s.write("release\r\n")
 pi.write(in1, 0)
 pi.write(in2, 1)
 #pi.set_PWM_dutycycle(pin_sb, 50)
@@ -238,11 +265,13 @@ try:
 		print("now:"+str(num[0])+"[deg]")
 		print("x_angle:"+str(x_angle))
 		print("duty:"+ str(i))
+#		print(str(num[4])+str(num[5]))
 		s.write("To goal:"+str(num[2])+"[m]"+str(num[3])+"[deg]\r\n")
-		time.sleep(0.15)
-		s.write("now:"+str(num[1])+"[m/s]"+str(num[0])+"[deg]\r\n")
-		time.sleep(0.15)
-                s.write("x_angle:"+str(x_angle)+"duty:"+ str(i)"\r\n")
+		time.sleep(0.3)
+		#s.write("now:"+str(num[1])+"[m/s]"+str(num[0])+"[deg]\r\n")
+		s.write(str(num[4])+","+str(num[5])+"\r\n")
+		time.sleep(0.1)
+                #s.write("x_angle:"+str(x_angle)+"duty:"+ str(i)+"\r\n")
 		sleepTime = 0.5 - (time.time() - now)
 		if sleepTime < 0.0:
 			continue
