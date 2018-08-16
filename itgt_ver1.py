@@ -66,6 +66,9 @@ s = serial.Serial('/dev/serial0', 115200, timeout=10)
 s.write("serial ok!\r\n")
 x_angle = 0
 
+f = open('test.txt','a')
+f.write('ok\r\n')
+f.close()
 class MCP3002:
 
 	def __init__(self):
@@ -180,6 +183,7 @@ def cb_interrupt(gpio, level, tick):
 	print('THE END')
 	s.write("THE END\r\n")
 	print (gpio, level, tick)
+	f.close()
 	pi.set_PWM_dutycycle(pin_sb, 0)
 	pi.write(led1, 0)
 	pi.write(led2, 0)
@@ -199,6 +203,8 @@ while True:
         if d > 100:
                 break
         time.sleep(1.0)
+
+f = open('test.txt','a')
 
 s.write("release\r\n")
 pi.write(in1, 0)
@@ -244,8 +250,10 @@ try:
 			pi.write(led3, 1)
 			if num[0]-num[3] < 10:
 				pi.hardware_PWM(gpio_pin0, 50,( 1.0/20.0) * 1000000)
+				f.write('servo:1.0\r\n')
 			elif num[0]-num[3] < -10:
 				pi.hardware_PWM(gpio_pin0, 50,( 2.0/20.0) * 1000000)
+				f.write('servo:2.0\r\n')
 			else:
 				pi.hardware_PWM(gpio_pin0, 50,( 1.5/20.0) * 1000000)
 
@@ -255,6 +263,8 @@ try:
 			pi.set_PWM_dutycycle(pin_sb, 0)
 			s.write("GOAL!!!\r\n")
 			print("goal!!")
+			f.write('goal\r\n')
+			f.close()
 			pi.write(led1, 0)
 			pi.write(led2, 0)
 			pi.write(led3, 0)
@@ -265,7 +275,8 @@ try:
 		print("now:"+str(num[0])+"[deg]")
 		print("x_angle:"+str(x_angle))
 		print("duty:"+ str(i))
-#		print(str(num[4])+str(num[5]))
+		print(str(num[4])+str(num[5]))
+		f.write(str(num[2])+','+str(num[3])+','+str(num[1])+','+str(num[0])+','+str(x_angle)+','+str(i)+','+str(num[4])+','+str(num[5])+'\r\n')
 		s.write("To goal:"+str(num[2])+"[m]"+str(num[3])+"[deg]\r\n")
 		time.sleep(0.3)
 		#s.write("now:"+str(num[1])+"[m/s]"+str(num[0])+"[deg]\r\n")
