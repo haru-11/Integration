@@ -22,8 +22,8 @@ end = 21
 x_angle = 0.0
 
 pi = 3.1415926535
-goal_latitude = 35.661276	#ゴールの緯度（10進法，南緯は負の数）
-goal_longitude = 139.366228	#ゴールの経度（10進法，西経は負の数）
+goal_latitude = 35.714784	#ゴールの緯度（10進法，南緯は負の数）
+goal_longitude = 139.76037	#ゴールの経度（10進法，西経は負の数）
 radius = 6378.137	#地球の半径km
 
 gps = micropyGPS.MicropyGPS(9, 'dd') # MicroGPSオブジェクトを生成する。
@@ -199,10 +199,16 @@ while i > 0:
         time.sleep(1)
 while True:
         d = adc.get_ADC()
-        s.write(str(d)+"\r\n")
+        #s.write(str(d)+"\r\n")
         if d > 100:
                 break
         time.sleep(1.0)
+i=60
+while i > 0:
+        d = adc.get_ADC()
+        s.write(str(i)+"sec,"+str(d)+"\r\n")
+        i = i - 1
+        time.sleep(1)
 
 f = open('test.txt','a')
 
