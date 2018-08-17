@@ -22,8 +22,8 @@ end = 21
 x_angle = 0.0
 
 pi = 3.1415926535
-goal_latitude = 35.714784	#ゴールの緯度（10進法，南緯は負の数）
-goal_longitude = 139.76037	#ゴールの経度（10進法，西経は負の数）
+goal_latitude = 35.7150216667 	#ゴールの緯度（10進法，南緯は負の数）
+goal_longitude = 139.760648333	#ゴールの経度（10進法，西経は負の数）
 radius = 6378.137	#地球の半径km
 
 gps = micropyGPS.MicropyGPS(9, 'dd') # MicroGPSオブジェクトを生成する。
@@ -52,7 +52,7 @@ pi.set_PWM_frequency(pin_sb, 800)
 pi.set_PWM_range(pin_sb, 255)
 pi.set_PWM_dutycycle(pin_sb, 0)
 
-pi.hardware_PWM(gpio_pin0, 50,( 0.15/20.0) * 1000000)
+#pi.hardware_PWM(gpio_pin0, 50,( 0.15/20.0) * 1000000)
 
 pi.write(in1, 0)
 pi.write(in2, 0)
@@ -191,7 +191,7 @@ def cb_interrupt(gpio, level, tick):
 	pi.write(led3, 0)
 	os._exit(1)
 
-i = 30
+i = 3
 while i > 0:
         d = adc.get_ADC()
         s.write(str(i)+"sec,"+str(d)+"\r\n")
@@ -200,10 +200,10 @@ while i > 0:
 while True:
         d = adc.get_ADC()
         #s.write(str(d)+"\r\n")
-        if d > 100:
+        if d > 500:
                 break
         time.sleep(1.0)
-i=60
+i=3
 while i > 0:
         d = adc.get_ADC()
         s.write(str(i)+"sec,"+str(d)+"\r\n")
@@ -215,6 +215,27 @@ f = open('test.txt','a')
 s.write("release\r\n")
 pi.write(in1, 0)
 pi.write(in2, 1)
+
+i = 0
+while i > 0:
+	pi.write(in1, 0)
+	pi.write(in2, 1)
+	pi.set_PWM_dutycycle(pin_sb, 255)
+	time.sleep(1.0)
+	pi.set_PWM_dutycycle(pin_sb, 0)
+	pi.write(in1, 1)
+	pi.write(in2, 1)
+	time.sleep(1.0)
+        pi.write(in1, 1)
+        pi.write(in2, 0)
+        pi.set_PWM_dutycycle(pin_sb, 255)
+        time.sleep(1.0)
+        pi.set_PWM_dutycycle(pin_sb, 0)
+        pi.write(in1, 1)
+        pi.write(in2, 1)
+        time.sleep(1.0)
+	i = i - 1
+	s.write('RELEASE_MODE'+str(i)+'\r\n')
 #pi.set_PWM_dutycycle(pin_sb, 50)
 #time.sleep(2.0)
 #pi.set_PWM_dutycycle(pin_sb, 100)
@@ -225,7 +246,8 @@ pi.write(in2, 1)
 #time.sleep(2.0)
 #pi.set_PWM_dutycycle(pin_sb, 255)
 i = 50
-
+pi.write(in1, 0)
+pi.write(in2, 1)
 #pi.set_PWM_dutycycle(pin_sb, 255)
 try:
 
@@ -255,14 +277,14 @@ try:
 			pi.set_PWM_dutycycle(pin_sb, 200)
 			pi.write(led3, 1)
 			if num[0]-num[3] < 10:
-				pi.hardware_PWM(gpio_pin0, 50,( 1.0/20.0) * 1000000)
-				f.write('servo:1.0\r\n')
+				#pi.hardware_PWM(gpio_pin0, 50,( 1.7/20.0) * 1000000)
+				f.write('servo:1.7\r\n')
 			elif num[0]-num[3] < -10:
-				pi.hardware_PWM(gpio_pin0, 50,( 2.0/20.0) * 1000000)
-				f.write('servo:2.0\r\n')
+				#pi.hardware_PWM(gpio_pin0, 50,( 1.3/20.0) * 1000000)
+				f.write('servo:1.3\r\n')
 			else:
-				pi.hardware_PWM(gpio_pin0, 50,( 1.5/20.0) * 1000000)
-
+				#pi.hardware_PWM(gpio_pin0, 50,( 1.5/20.0) * 1000000)
+				f.write('servo:1.5\r\n')
 		if num[2] < 0.01:
 			pi.write(in1, 0)
 			pi.write(in2, 0)
@@ -299,4 +321,5 @@ except KeyboardInterrupt:
        	 		pi.write(led2, 0)
         		pi.write(led3, 0)
         		pi.write(led3, 0)
+			f.close()
 			s.write("KeyboardInterrupt,close(serial)\r\n")
