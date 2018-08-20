@@ -63,11 +63,11 @@ pi.write(led4, 0)
 
 time.sleep(1.0)
 s = serial.Serial('/dev/serial0', 115200, timeout=10)
-s.write("serial ok!\r\n")
+s.write(b"serial ok!\r\n")
 x_angle = 0
 
-f = open('test.txt','a')
-f.write('ok\r\n')
+f = open('test2.txt','a')
+f.write(b"ok\r\n".decode('utf-8'))
 f.close()
 class MCP3002:
 
@@ -96,23 +96,37 @@ def cal_gps(radius, goal_latitude, goal_longitude, now_lat, now_lon):
 		azi = azi + 360.0
 	return dist, azi
 
-def rungps(): # GPSモジュールを読み、GPSオブジェクトを更新する
+def get_gps():
+	global gps_time, lat, lon, speed, dir, dist, azi
+	s.readline()
+	while True:
 
-	try:
+		sentence = s.readline().decode('utf-8')
 
-	    	s.readline() # 最初の1行は中途半端なデーターが読めることがあるので、捨てる
-    		while True:
-        		sentence = s.readline().decode('utf-8') # GPSデーターを読み、文字列に変換する
+		#時間
+		h = int(sentence[7]+sentence[8]) + 9
+		if h > 23:
+			h - 24
+		gps_time = str(h)+sentence[9]+sentence[10]+sentence[11]+sentence[12]+sentence[13]+sentence[14]+sentence[15]+sentence[16]
 
-       			if sentence[0] != '$': # 先頭が'$'でなければ捨てる
-            			continue
-        		for x in sentence: # 読んだ文字列を解析してGPSオブジェクトにデーターを追加、更新する
-            			gps.update(x)
-	except UnicodeDecodeError:
-		print('ERROR')
-		rungps()
+		#緯度経度
+		lat = float(sentence[20]+sentence[21]) + float(sentence[22]+sentence[23]+sentence[24]+sentence[25]+sentence[26]+sentence[27]+sentence[28])/60
+		lon = float(sentence[32]+sentence[33]+sentence[34]) + float(sentence[35]+sentence[36]+sentence[37]+sentence[38]+sentence[39]+sentence[40]+sentence[41])/60
+		if sentence[43] == 'W':
+			lon = 0.0 - lon
 
-gpsthread = threading.Thread(target=rungps, args=()) # 上の関数を実行するスレッドを生成
+		#速度
+		speed = float(sentence[45]+sentence[46]+sentence[47]+sentence[48]) * 1.852
+
+		#方位
+		if sentence[55] == ',':
+			dir = sentence[50]+sentence[51]+sentence[52]+sentence[53]+sentence[54]
+		else :
+			dir = sentence[50]+sentence[51]+sentence[52]+sentence[53]+sentence[54]+sentence[55]
+		#計算
+		dist, azi = cal_gps(radius, goal_latitude, goal_longitude, lat, lon)
+
+gpsthread = threading.Thread(target=get_gps, args=()) # 上の関数を実行するスレッドを生成
 gpsthread.daemon = True
 gpsthread.start() # スレッドを起動
 
@@ -120,38 +134,38 @@ def get_axis():
 	global x_angle
 	while True:
 
-        	i = 0
-        	data_accx = [0]
-        	data_accy = [0]
-        	data_accz = [0]
-        	while True:
-			now = time.time()
-                	acc = mpu.getAccel()
-                	data_accx.append(acc[0])
-                	data_accy.append(acc[1])
-                	data_accz.append(acc[2])
+		i = 0
+		data_accx = [0]
+		data_accy = [0]
+		data_accz = [0]
+		while True:
+			now=time.time()
+			acc=mpu.getAccel()
+			data_accx.append(acc[0])
+			data_accy.append(acc[1])
+			data_accz.append(acc[2])
 
-                	if i == 10:
-                        	medianx = np.median(data_accx)
-                        	mediany = np.median(data_accy)
-                        	medianz = np.median(data_accz)
-                        	break
-                	i = i + 1
-	        	sleepTime = 0.05 - (time.time() - now)
-        		if sleepTime < 0.0:
-                		continue
-        		time.sleep(sleepTime)
-        	#gyr = mpu.getGyro()
-        	#mag = mpu.getMag()
+			if i == 10:
+				medianx = np.median(data_accx)
+				mediany = np.median(data_accy)
+				medianz = np.median(data_accz)
+				break
+			i = i + 1
+			sleepTime = 0.05 - (time.time() - now)
+			if sleepTime < 0.0:
+				continue
+			time.sleep(sleepTime)
+		#gyr = mpu.getGyro()
+		#mag = mpu.getMag()
 
-        	#x_angle = math.degrees( math.atan2( acc[0], math.sqrt(acc[1] ** 2 + acc[2] ** 2 )))
-        	#y_angle = math.degrees( math.atan2( acc[1], math.sqrt(acc[0] ** 2 + acc[2] ** 2 )))
-        	x_angle = math.degrees( math.atan2( medianx, math.sqrt(mediany ** 2 + medianz ** 2 )))
+		#x_angle = math.degrees( math.atan2( acc[0], math.sqrt(acc[1] ** 2 + acc[2] ** 2 )))
+		#y_angle = math.degrees( math.atan2( acc[1], math.sqrt(acc[0] ** 2 + acc[2] ** 2 )))
+		x_angle = math.degrees( math.atan2( medianx, math.sqrt(mediany ** 2 + medianz ** 2 )))
 		if medianz>0:
 			x_angle = (90-x_angle) + 90
-        	y_angle = math.degrees( math.atan2( mediany, math.sqrt(medianx ** 2 + medianz ** 2 )))
+		y_angle = math.degrees( math.atan2( mediany, math.sqrt(medianx ** 2 + medianz ** 2 )))
 #		print('x:'+ str(x_angle))
-#       	 print('y:'+ str(y_angle))
+#       	print('y:'+ str(y_angle))
 #       	print('s:'+ str(sita))
 #       	print ('%+8.7f,%+8.7f,%+8.7f' % (mag[0],mag[1],mag[2]))
 #       	time.sleep(1.0)
@@ -161,28 +175,10 @@ mputhread = threading.Thread(target=get_axis, args=()) # 上の関数を実行�
 mputhread.daemon = True
 mputhread.start() # スレッドを起動
 
-def get_gps():
-
-	if gps.clean_sentences > 20: # ちゃんとしたデーターがある程度たまったら出力する
-		h = gps.timestamp[0] if gps.timestamp[0] < 24 else gps.timestamp[0] - 24
-		cal = cal_gps(radius, goal_latitude, goal_longitude, gps.latitude[0], gps.longitude[0])
-		#print('%2d:%02d:%04.1f' % (h, gps.timestamp[1], gps.timestamp[2]))
-		#print('緯度経度: %2.8f, %2.8f' % (gps.latitude[0], gps.longitude[0]))
-		#print('海抜: %f' % gps.altitude)
-		#print('速度: %f [km/h]' % gps.speed[1])
-		#print('方位: %f' % gps.course)
-		#print('距離: %f' % cal[0])
-		#print('方位角: %f' % cal[1])
-		pi.write(led2, 1)
-		return gps.course, gps.speed[1], cal[0], cal[1],gps.latitude[0], gps.longitude[0]
-	else:
-		pi.write(led2, 0)
-		return 0, 0, 30, 0
-
 def cb_interrupt(gpio, level, tick):
 	print('THE END')
-	s.write("THE END\r\n")
-	print (gpio, level, tick)
+	s.write(b"THE END\r\n")
+	print((gpio, level, tick))
 	f.close()
 	pi.set_PWM_dutycycle(pin_sb, 0)
 	pi.write(led1, 0)
@@ -194,29 +190,29 @@ def cb_interrupt(gpio, level, tick):
 i = 3
 while i > 0:
         d = adc.get_ADC()
-        s.write(str(i)+"sec,"+str(d)+"\r\n")
+        s.write(str(i).encode()+b"sec,"+str(d).encode()+b"\r\n")
         i = i - 1
         time.sleep(1)
 while True:
         d = adc.get_ADC()
         #s.write(str(d)+"\r\n")
-        if d > 500:
+        if d > 0:
                 break
         time.sleep(1.0)
 i=3
 while i > 0:
         d = adc.get_ADC()
-        s.write(str(i)+"sec,"+str(d)+"\r\n")
+        s.write(str(i).encode()+b"sec,"+str(d).encode()+b"\r\n")
         i = i - 1
         time.sleep(1)
 
-f = open('test.txt','a')
+f = open('test2.txt','a')
 
-s.write("release\r\n")
+s.write(b"release\r\n")
 pi.write(in1, 0)
 pi.write(in2, 1)
 
-i = 0
+i = 1
 while i > 0:
 	pi.write(in1, 0)
 	pi.write(in2, 1)
@@ -226,36 +222,27 @@ while i > 0:
 	pi.write(in1, 1)
 	pi.write(in2, 1)
 	time.sleep(1.0)
-        pi.write(in1, 1)
-        pi.write(in2, 0)
-        pi.set_PWM_dutycycle(pin_sb, 255)
-        time.sleep(1.0)
-        pi.set_PWM_dutycycle(pin_sb, 0)
-        pi.write(in1, 1)
-        pi.write(in2, 1)
-        time.sleep(1.0)
+	pi.write(in1, 1)
+	pi.write(in2, 0)
+	pi.set_PWM_dutycycle(pin_sb, 255)
+	time.sleep(1.0)
+	pi.set_PWM_dutycycle(pin_sb, 0)
+	pi.write(in1, 1)
+	pi.write(in2, 1)
+	time.sleep(1.0)
 	i = i - 1
-	s.write('RELEASE_MODE'+str(i)+'\r\n')
-#pi.set_PWM_dutycycle(pin_sb, 50)
-#time.sleep(2.0)
-#pi.set_PWM_dutycycle(pin_sb, 100)
-#time.sleep(2.0)
-#pi.set_PWM_dutycycle(pin_sb, 150)
-#time.sleep(2.0)
-#pi.set_PWM_dutycycle(pin_sb, 200)
-#time.sleep(2.0)
-#pi.set_PWM_dutycycle(pin_sb, 255)
+	s.write(b'RELEASE_MODE'+str(i).encode()+b'\r\n')
+
 i = 50
 pi.write(in1, 0)
 pi.write(in2, 1)
-#pi.set_PWM_dutycycle(pin_sb, 255)
-try:
+servo = 0
 
+try:
 	while True:
 		now = time.time()
 		cb = pi.callback(end, pigpio.FALLING_EDGE, cb_interrupt)
 
-		num = get_gps()
 		if x_angle < 90:
 			i= i+8
 			if i > 250:
@@ -268,58 +255,57 @@ try:
 			pi.set_PWM_dutycycle(pin_sb, i)
 		else:
 			pi.write(in1, 0)
-                        pi.write(in2, 0)
+			pi.write(in2, 0)
 			time.sleep(1)
 			pi.write(in1, 0)
-                        pi.write(in2, 1)
+			pi.write(in2, 0)
 
-		if num[1] > 2:
+		if speed > 1.5:
 			pi.set_PWM_dutycycle(pin_sb, 200)
 			pi.write(led3, 1)
-			if num[0]-num[3] < 10:
-				#pi.hardware_PWM(gpio_pin0, 50,( 1.7/20.0) * 1000000)
-				f.write('servo:1.7\r\n')
-			elif num[0]-num[3] < -10:
-				#pi.hardware_PWM(gpio_pin0, 50,( 1.3/20.0) * 1000000)
-				f.write('servo:1.3\r\n')
+			if float(dir) - azi < 10:
+				pi.hardware_PWM(gpio_pin0, 50,( 1.7/20.0) * 1000000)
+				servo = 1.7
+			elif float(dir) - azi < -10:
+				pi.hardware_PWM(gpio_pin0, 50,( 1.3/20.0) * 1000000)
+				servo = 1.3
 			else:
-				#pi.hardware_PWM(gpio_pin0, 50,( 1.5/20.0) * 1000000)
-				f.write('servo:1.5\r\n')
-		if num[2] < 0.01:
+				pi.hardware_PWM(gpio_pin0, 50,( 1.5/20.0) * 1000000)
+				servo = 1.5
+		if dist < 0.01:
 			pi.write(in1, 0)
 			pi.write(in2, 0)
 			pi.set_PWM_dutycycle(pin_sb, 0)
-			s.write("GOAL!!!\r\n")
+			s.write(b"GOAL!!!\r\n")
 			print("goal!!")
-			f.write('goal\r\n')
+			f.write(b'goal\r\n')
 			f.close()
 			pi.write(led1, 0)
 			pi.write(led2, 0)
 			pi.write(led3, 0)
 			pi.write(led3, 0)
-		print("To goal:"+str(num[2])+"[m]")
-		print("To goal:"+str(num[3])+"[deg]")
-		print("now:"+str(num[1])+"[m/s]")
-		print("now:"+str(num[0])+"[deg]")
+		print("To goal:"+str(dist)+"[m]")
+		print("To goal:"+str(azi)+"[deg]")
+		print("now:"+str(speed)+"[m/s]")
+		print("now:"+dir+"[deg]")
 		print("x_angle:"+str(x_angle))
 		print("duty:"+ str(i))
-		print(str(num[4])+str(num[5]))
-		f.write(str(num[2])+','+str(num[3])+','+str(num[1])+','+str(num[0])+','+str(x_angle)+','+str(i)+','+str(num[4])+','+str(num[5])+'\r\n')
-		s.write("To goal:"+str(num[2])+"[m]"+str(num[3])+"[deg]\r\n")
-		time.sleep(0.3)
-		#s.write("now:"+str(num[1])+"[m/s]"+str(num[0])+"[deg]\r\n")
-		s.write(str(num[4])+","+str(num[5])+"\r\n")
-		time.sleep(0.1)
-                #s.write("x_angle:"+str(x_angle)+"duty:"+ str(i)+"\r\n")
+		#print((str(num[4])+','+str(num[5])))
+		f.write(gps_time+','+str(lat)+','+str(lon)+','+str(speed)+','+str(dir)+','+str(x_angle)+','+str(i)+','+str(servo)+'\r\n')
+		s.write(str(lat).encode()+b','+str(lon).encode()+b'\r\n')
+		time.sleep(0.2)
+		s.write(str(dir).encode()+b','+str(x_angle).encode()+b','+str(i).encode()+b','+str(servo).encode()+b'\r\n')
 		sleepTime = 0.5 - (time.time() - now)
 		if sleepTime < 0.0:
 			continue
 		time.sleep(sleepTime)
 except KeyboardInterrupt:
 			pi.set_PWM_dutycycle(pin_sb, 0)
-        		pi.write(led1, 0)
-       	 		pi.write(led2, 0)
-        		pi.write(led3, 0)
-        		pi.write(led3, 0)
+			pi.write(led1, 0)
+			pi.write(led2, 0)
+			pi.write(led3, 0)
+			pi.write(led3, 0)
 			f.close()
-			s.write("KeyboardInterrupt,close(serial)\r\n")
+			s.close()
+			s.write(b"KeyboardInterrupt,close(serial)\r\n")
+			pass
