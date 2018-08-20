@@ -102,7 +102,8 @@ def get_gps():
 	while True:
 
 		sentence = s.readline().decode('utf-8')
-
+		if sentence[0] != '$':
+			continue
 		#時間
 		h = int(sentence[7]+sentence[8]) + 9
 		if h > 23:
