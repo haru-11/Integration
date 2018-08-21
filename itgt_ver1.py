@@ -22,8 +22,8 @@ end = 21
 x_angle = 0.0
 
 pi = 3.1415926535
-goal_latitude = 35.7150216667 	#ゴールの緯度（10進法，南緯は負の数）
-goal_longitude = 139.760648333	#ゴールの経度（10進法，西経は負の数）
+goal_latitude = 35.6576231 	#ゴールの緯度（10進法，南緯は負の数）
+goal_longitude = 139.3670235	#ゴールの経度（10進法，西経は負の数）
 radius = 6378.137	#地球の半径km
 
 gps = micropyGPS.MicropyGPS(9, 'dd') # MicroGPSオブジェクトを生成する。
@@ -51,7 +51,9 @@ pi.set_pull_up_down(end, pigpio.PUD_UP)
 pi.set_PWM_frequency(pin_sb, 800)
 pi.set_PWM_range(pin_sb, 255)
 pi.set_PWM_dutycycle(pin_sb, 0)
-
+pi.set_PWM_frequency(gpio_pin0, 50)
+pi.set_PWM_range(gpio_pin0, 255)
+pi.set_PWM_dutycycle(gpio_pin0, (1.75/20)*255)
 #pi.hardware_PWM(gpio_pin0, 50,( 0.15/20.0) * 1000000)
 
 pi.write(in1, 0)
@@ -99,34 +101,39 @@ def cal_gps(radius, goal_latitude, goal_longitude, now_lat, now_lon):
 def get_gps():
 	global gps_time, lat, lon, speed, dir, dist, azi
 	s.readline()
-	while True:
+	try:
+		while True:
 
-		sentence = s.readline().decode('utf-8')
-		if sentence[0] != '$':
-			continue
-		#時間
-		h = int(sentence[7]+sentence[8]) + 9
-		if h > 23:
-			h - 24
-		gps_time = str(h)+sentence[9]+sentence[10]+sentence[11]+sentence[12]+sentence[13]+sentence[14]+sentence[15]+sentence[16]
+			sentence = s.readline().decode('utf-8')
+			if sentence[0] != '$':
+				continue
+			#時間
+			h = int(sentence[7]+sentence[8]) + 9
+			if h > 23:
+				h - 24
+			gps_time = str(h)+sentence[9]+sentence[10]+sentence[11]+sentence[12]+sentence[13]+sentence[14]+sentence[15]+sentence[16]
 
-		#緯度経度
-		lat = float(sentence[20]+sentence[21]) + float(sentence[22]+sentence[23]+sentence[24]+sentence[25]+sentence[26]+sentence[27]+sentence[28])/60
-		lon = float(sentence[32]+sentence[33]+sentence[34]) + float(sentence[35]+sentence[36]+sentence[37]+sentence[38]+sentence[39]+sentence[40]+sentence[41])/60
-		if sentence[43] == 'W':
-			lon = 0.0 - lon
+			#緯度経度
+			lat = float(sentence[20]+sentence[21]) + float(sentence[22]+sentence[23]+sentence[24]+sentence[25]+sentence[26]+sentence[27]+sentence[28])/60
+			lon = float(sentence[32]+sentence[33]+sentence[34]) + float(sentence[35]+sentence[36]+sentence[37]+sentence[38]+sentence[39]+sentence[40]+sentence[41])/60
+			if sentence[43] == 'W':
+				lon = 0.0 - lon
 
-		#速度
-		speed = float(sentence[45]+sentence[46]+sentence[47]+sentence[48]) * 1.852
+			#速度
+			speed = float(sentence[45]+sentence[46]+sentence[47]+sentence[48]) * 1.852
 
-		#方位
-		if sentence[55] == ',':
-			dir = sentence[50]+sentence[51]+sentence[52]+sentence[53]+sentence[54]
-		else :
-			dir = sentence[50]+sentence[51]+sentence[52]+sentence[53]+sentence[54]+sentence[55]
-		#計算
-		dist, azi = cal_gps(radius, goal_latitude, goal_longitude, lat, lon)
-
+			#方位
+			if sentence[54] == ',':
+				dir = sentence[50]+sentence[51]+sentence[52]+sentence[53]
+			elif sentence[55] == ',':
+				dir = sentence[50]+sentence[51]+sentence[52]+sentence[53]+sentence[54]
+			else :
+				dir = sentence[50]+sentence[51]+sentence[52]+sentence[53]+sentence[54]+sentence[55]
+			#計算
+			dist, azi = cal_gps(radius, goal_latitude, goal_longitude, lat, lon)
+	except ValueError:
+		print("ValueError")
+		get_gps()
 gpsthread = threading.Thread(target=get_gps, args=()) # 上の関数を実行するスレッドを生成
 gpsthread.daemon = True
 gpsthread.start() # スレッドを起動
@@ -213,7 +220,7 @@ s.write(b"release\r\n")
 pi.write(in1, 0)
 pi.write(in2, 1)
 
-i = 1
+i = 0
 while i > 0:
 	pi.write(in1, 0)
 	pi.write(in2, 1)
@@ -259,40 +266,45 @@ try:
 			pi.write(in2, 0)
 			time.sleep(1)
 			pi.write(in1, 0)
-			pi.write(in2, 0)
+			pi.write(in2, 1)
 
-		if speed > 1.5:
-			pi.set_PWM_dutycycle(pin_sb, 200)
+		if speed > 0.3:
 			pi.write(led3, 1)
-			if float(dir) - azi < 10:
-				pi.hardware_PWM(gpio_pin0, 50,( 1.7/20.0) * 1000000)
-				servo = 1.7
-			elif float(dir) - azi < -10:
-				pi.hardware_PWM(gpio_pin0, 50,( 1.3/20.0) * 1000000)
+			if float(dir) - azi < -10:
+				#pi.hardware_PWM(gpio_pin0, 50,( 1.75/20.0) * 1000000)
+				pi.set_PWM_dutycycle(gpio_pin0, (2.0/20)*255)
+				print("RRR"+str(float(dir) - azi))
+				servo = 1.73
+			elif float(dir) - azi > 10:
+				#pi.hardware_PWM(gpio_pin0, 50,( 1.3/20.0) * 1000000)
+				pi.set_PWM_dutycycle(gpio_pin0, (1.67/20)*255)
+				print("LLL"+str(float(dir) - azi))
 				servo = 1.3
 			else:
-				pi.hardware_PWM(gpio_pin0, 50,( 1.5/20.0) * 1000000)
+				#pi.hardware_PWM(gpio_pin0, 50,( 1.5/20.0) * 1000000)
+				pi.set_PWM_dutycycle(gpio_pin0, (1.75/20)*255)
+				print(str(float(dir) - azi))
 				servo = 1.5
-		if dist < 0.01:
+		if dist < 0.005:
 			pi.write(in1, 0)
 			pi.write(in2, 0)
 			pi.set_PWM_dutycycle(pin_sb, 0)
 			s.write(b"GOAL!!!\r\n")
 			print("goal!!")
-			f.write(b'goal\r\n')
+			f.write('goal\r\n')
 			f.close()
 			pi.write(led1, 0)
 			pi.write(led2, 0)
 			pi.write(led3, 0)
 			pi.write(led3, 0)
 		print("To goal:"+str(dist)+"[m]")
-		print("To goal:"+str(azi)+"[deg]")
-		print("now:"+str(speed)+"[m/s]")
-		print("now:"+dir+"[deg]")
-		print("x_angle:"+str(x_angle))
+		#print("To goal:"+str(azi)+"[deg]")
+		#print("now:"+str(speed)+"[m/s]")
+		#print("now:"+dir+"[deg]")
+		#print("x_angle:"+str(x_angle))
 		print("duty:"+ str(i))
 		#print((str(num[4])+','+str(num[5])))
-		f.write(gps_time+','+str(lat)+','+str(lon)+','+str(speed)+','+str(dir)+','+str(x_angle)+','+str(i)+','+str(servo)+'\r\n')
+		f.write(gps_time+','+str(lat)+','+str(lon)+','+str(dist)+','+str(speed)+','+str(dir)+','+str(x_angle)+','+str(i)+','+str(servo)+'\r\n')
 		s.write(str(lat).encode()+b','+str(lon).encode()+b'\r\n')
 		time.sleep(0.2)
 		s.write(str(dir).encode()+b','+str(x_angle).encode()+b','+str(i).encode()+b','+str(servo).encode()+b'\r\n')
@@ -302,10 +314,13 @@ try:
 		time.sleep(sleepTime)
 except KeyboardInterrupt:
 			pi.set_PWM_dutycycle(pin_sb, 0)
+			pi.set_PWM_dutycycle(gpio_pin0, (1.75/20)*255)
 			pi.write(led1, 0)
 			pi.write(led2, 0)
 			pi.write(led3, 0)
 			pi.write(led3, 0)
+			pi.write(in1, 0)
+			pi.write(in2, 0)
 			f.close()
 			s.close()
 			s.write(b"KeyboardInterrupt,close(serial)\r\n")
