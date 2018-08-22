@@ -22,8 +22,8 @@ end = 21
 x_angle = 0.0
 
 pi = 3.1415926535
-goal_latitude = 35.6576231 	#ゴールの緯度（10進法，南緯は負の数）
-goal_longitude = 139.3670235	#ゴールの経度（10進法，西経は負の数）
+goal_latitude = 35.657696 	#ゴールの緯度（10進法，南緯は負の数）
+goal_longitude = 139.367102	#ゴールの経度（10進法，西経は負の数）
 radius = 6378.137	#地球の半径km
 
 gps = micropyGPS.MicropyGPS(9, 'dd') # MicroGPSオブジェクトを生成する。
@@ -272,26 +272,26 @@ try:
 			pi.write(led3, 1)
 			if float(dir) - azi < -10:
 				#pi.hardware_PWM(gpio_pin0, 50,( 1.75/20.0) * 1000000)
-				pi.set_PWM_dutycycle(gpio_pin0, (2.0/20)*255)
+				pi.set_PWM_dutycycle(gpio_pin0, (2.15/20)*255)
 				print("RRR"+str(float(dir) - azi))
-				servo = 1.73
+				servo = 2.15
 			elif float(dir) - azi > 10:
 				#pi.hardware_PWM(gpio_pin0, 50,( 1.3/20.0) * 1000000)
 				pi.set_PWM_dutycycle(gpio_pin0, (1.67/20)*255)
 				print("LLL"+str(float(dir) - azi))
-				servo = 1.3
+				servo = 1.67
 			else:
 				#pi.hardware_PWM(gpio_pin0, 50,( 1.5/20.0) * 1000000)
-				pi.set_PWM_dutycycle(gpio_pin0, (1.75/20)*255)
-				print(str(float(dir) - azi))
-				servo = 1.5
+				pi.set_PWM_dutycycle(gpio_pin0, (1.85/20)*255)
+				print('SSS'+str(float(dir) - azi))
+				servo = 1.85
 		if dist < 0.005:
 			pi.write(in1, 0)
 			pi.write(in2, 0)
 			pi.set_PWM_dutycycle(pin_sb, 0)
 			s.write(b"GOAL!!!\r\n")
 			print("goal!!")
-			f.write('goal\r\n')
+			f.write('goal!!!!\r\n')
 			f.close()
 			pi.write(led1, 0)
 			pi.write(led2, 0)
@@ -299,7 +299,7 @@ try:
 			pi.write(led3, 0)
 		print("To goal:"+str(dist)+"[m]")
 		#print("To goal:"+str(azi)+"[deg]")
-		#print("now:"+str(speed)+"[m/s]")
+		print("now:"+str(speed)+"[m/s]")
 		#print("now:"+dir+"[deg]")
 		#print("x_angle:"+str(x_angle))
 		print("duty:"+ str(i))
