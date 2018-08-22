@@ -19,8 +19,9 @@ led2 = 24
 led3 = 23
 led4 = 18
 end = 21
+PTC1 = 6
 x_angle = 0.0
-
+speed = 0.0
 pi = 3.1415926535
 goal_latitude = 35.657696 	#ゴールの緯度（10進法，南緯は負の数）
 goal_longitude = 139.367102	#ゴールの経度（10進法，西経は負の数）
@@ -45,6 +46,7 @@ pi.set_mode(led1, pigpio.OUTPUT)
 pi.set_mode(led2, pigpio.OUTPUT)
 pi.set_mode(led3, pigpio.OUTPUT)
 pi.set_mode(led4, pigpio.OUTPUT)
+pi.set_mode(PTC1, pigpio.OUTPUT)
 pi.set_mode(end, pigpio.INPUT)
 pi.set_pull_up_down(end, pigpio.PUD_UP)
 
@@ -53,7 +55,7 @@ pi.set_PWM_range(pin_sb, 255)
 pi.set_PWM_dutycycle(pin_sb, 0)
 pi.set_PWM_frequency(gpio_pin0, 50)
 pi.set_PWM_range(gpio_pin0, 255)
-pi.set_PWM_dutycycle(gpio_pin0, (1.75/20)*255)
+pi.set_PWM_dutycycle(gpio_pin0, (1.85/20)*255)
 #pi.hardware_PWM(gpio_pin0, 50,( 0.15/20.0) * 1000000)
 
 pi.write(in1, 0)
@@ -62,8 +64,8 @@ pi.write(led1, 1)
 pi.write(led2, 0)
 pi.write(led3, 0)
 pi.write(led4, 0)
+pi.write(PTC1 ,0)
 
-time.sleep(1.0)
 s = serial.Serial('/dev/serial0', 115200, timeout=10)
 s.write(b"serial ok!\r\n")
 x_angle = 0
@@ -99,7 +101,7 @@ def cal_gps(radius, goal_latitude, goal_longitude, now_lat, now_lon):
 	return dist, azi
 
 def get_gps():
-	global gps_time, lat, lon, speed, dir, dist, azi
+	global gps_time, lat, lon, speed, dir, dist, azi,sentence
 	s.readline()
 	try:
 		while True:
@@ -131,6 +133,9 @@ def get_gps():
 				dir = sentence[50]+sentence[51]+sentence[52]+sentence[53]+sentence[54]+sentence[55]
 			#計算
 			dist, azi = cal_gps(radius, goal_latitude, goal_longitude, lat, lon)
+
+			#エラー
+
 	except ValueError:
 		print("ValueError")
 		get_gps()
@@ -201,13 +206,16 @@ while i > 0:
         s.write(str(i).encode()+b"sec,"+str(d).encode()+b"\r\n")
         i = i - 1
         time.sleep(1)
+pi.write(PTC1,1)
+time.sleep(1.0)
 while True:
         d = adc.get_ADC()
         #s.write(str(d)+"\r\n")
-        if d > 0:
+        if d > 100:
                 break
         time.sleep(1.0)
-i=3
+pi.write(PTC1,0)
+i=2
 while i > 0:
         d = adc.get_ADC()
         s.write(str(i).encode()+b"sec,"+str(d).encode()+b"\r\n")
@@ -225,7 +233,7 @@ while i > 0:
 	pi.write(in1, 0)
 	pi.write(in2, 1)
 	pi.set_PWM_dutycycle(pin_sb, 255)
-	time.sleep(1.0)
+	time.sleep(2.0)
 	pi.set_PWM_dutycycle(pin_sb, 0)
 	pi.write(in1, 1)
 	pi.write(in2, 1)
@@ -233,7 +241,7 @@ while i > 0:
 	pi.write(in1, 1)
 	pi.write(in2, 0)
 	pi.set_PWM_dutycycle(pin_sb, 255)
-	time.sleep(1.0)
+	time.sleep(2.0)
 	pi.set_PWM_dutycycle(pin_sb, 0)
 	pi.write(in1, 1)
 	pi.write(in2, 1)
@@ -245,9 +253,18 @@ i = 50
 pi.write(in1, 0)
 pi.write(in2, 1)
 servo = 0
-
+gps_err_cont = 0
 try:
 	while True:
+		if sentence[18] == 'V':
+			gps_err_cont = gps_err_cont + 1
+		if gps_err_cont = 5:
+			while sentence[18] == 'V':
+				pi.set_PWM_dutycycle(pin_sb, 0)
+				time.sleep(1.0)
+				print("GPSERROR")
+			i = 50
+			gps_err_cont = 0
 		now = time.time()
 		cb = pi.callback(end, pigpio.FALLING_EDGE, cb_interrupt)
 
@@ -272,12 +289,12 @@ try:
 			pi.write(led3, 1)
 			if float(dir) - azi < -10:
 				#pi.hardware_PWM(gpio_pin0, 50,( 1.75/20.0) * 1000000)
-				pi.set_PWM_dutycycle(gpio_pin0, (2.15/20)*255)
+				pi.set_PWM_dutycycle(gpio_pin0, (2.1/20)*255)
 				print("RRR"+str(float(dir) - azi))
 				servo = 2.15
 			elif float(dir) - azi > 10:
 				#pi.hardware_PWM(gpio_pin0, 50,( 1.3/20.0) * 1000000)
-				pi.set_PWM_dutycycle(gpio_pin0, (1.67/20)*255)
+				pi.set_PWM_dutycycle(gpio_pin0, (1.75/20)*255)
 				print("LLL"+str(float(dir) - azi))
 				servo = 1.67
 			else:
@@ -297,6 +314,11 @@ try:
 			pi.write(led2, 0)
 			pi.write(led3, 0)
 			pi.write(led3, 0)
+		if i == 255:
+			s.write(b'GOAL\r\n')
+			pi.set_PWM_dutycycle(pin_sb, 0)
+			pi.write(in1,0)
+			pi.write(in2,1)
 		print("To goal:"+str(dist)+"[m]")
 		#print("To goal:"+str(azi)+"[deg]")
 		print("now:"+str(speed)+"[m/s]")
@@ -304,6 +326,7 @@ try:
 		#print("x_angle:"+str(x_angle))
 		print("duty:"+ str(i))
 		#print((str(num[4])+','+str(num[5])))
+		print(sentence)
 		f.write(gps_time+','+str(lat)+','+str(lon)+','+str(dist)+','+str(speed)+','+str(dir)+','+str(x_angle)+','+str(i)+','+str(servo)+'\r\n')
 		s.write(str(lat).encode()+b','+str(lon).encode()+b'\r\n')
 		time.sleep(0.2)
