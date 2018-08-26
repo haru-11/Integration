@@ -22,8 +22,8 @@ PTC1 = 6
 x_angle = 0.0
 speed = 0.0
 pi = 3.1415926535
-goal_latitude = 35.661388 	#ゴールの緯度（10進法，南緯は負の数）
-goal_longitude = 139.366255	#ゴールの経度（10進法，西経は負の数）
+goal_latitude = 35.6576231 	#ゴールの緯度（10進法，南緯は負の数）
+goal_longitude = 139.3670235	#ゴールの経度（10進法，西経は負の数）
 radius = 6378.137	#地球の半径km
 
 dist_cnt = 0
@@ -54,7 +54,7 @@ pi.set_PWM_range(pin_sb, 255)
 pi.set_PWM_dutycycle(pin_sb, 0)
 pi.set_PWM_frequency(gpio_pin0, 50)
 pi.set_PWM_range(gpio_pin0, 255)
-pi.set_PWM_dutycycle(gpio_pin0, (1.75/20)*255)
+pi.set_PWM_dutycycle(gpio_pin0, (1.55/20)*255)
 #pi.hardware_PWM(gpio_pin0, 50,( 0.15/20.0) * 1000000)
 
 pi.write(in1, 0)
@@ -202,7 +202,13 @@ def cb_interrupt(gpio, level, tick):
 	pi.write(led3, 0)
 	os._exit(1)
 
-def abareru(mode):
+def abareru(mode,servo):
+	if servo == 1:
+		pi.set_PWM_dutycycle(gpio_pin0, (1.7/20)*255)
+	elif servo == 2:
+		pi.set_PWM_dutycycle(gpio_pin0, (1.4/20)*255)
+	elif servo == 3:
+		pi.set_PWM_dutycycle(gpio_pin0, (1.55/20)*255)
 
 	if mode == 1:
 		pi.write(in1, 0)
@@ -221,6 +227,43 @@ def abareru(mode):
 		pi.write(in1, 1)
 		pi.write(in2, 1)
 		time.sleep(1.0)
+
+	elif mode == 2:
+                pi.write(in1, 0)
+                pi.write(in2, 1)
+                pi.set_PWM_dutycycle(pin_sb, 255)
+                time.sleep(2.0)
+                pi.set_PWM_dutycycle(pin_sb, 0)
+                pi.write(in1, 1)
+                pi.write(in2, 1)
+                time.sleep(1.0)
+                pi.write(in1, 0)
+                pi.write(in2, 1)
+                pi.set_PWM_dutycycle(pin_sb, 255)
+                time.sleep(2.0)
+                pi.set_PWM_dutycycle(pin_sb, 0)
+                pi.write(in1, 1)
+                pi.write(in2, 1)
+                time.sleep(1.0)
+
+	elif mode == 3:
+                pi.write(in1, 1)
+                pi.write(in2, 0)
+                pi.set_PWM_dutycycle(pin_sb, 255)
+                time.sleep(2.0)
+                pi.set_PWM_dutycycle(pin_sb, 0)
+                pi.write(in1, 1)
+                pi.write(in2, 1)
+                time.sleep(1.0)
+                pi.write(in1, 1)
+                pi.write(in2, 0)
+                pi.set_PWM_dutycycle(pin_sb, 255)
+                time.sleep(2.0)
+                pi.set_PWM_dutycycle(pin_sb, 0)
+                pi.write(in1, 1)
+                pi.write(in2, 1)
+                time.sleep(1.0)
+
 
 i = 0
 while i > 0:
@@ -252,7 +295,7 @@ s.write(b"release\r\n")
 pi.write(in1, 0)
 pi.write(in2, 1)
 
-i = 1
+i = 0
 
 while i > 0:
 	pi.write(in1, 0)
@@ -279,6 +322,7 @@ pi.write(in1, 0)
 pi.write(in2, 1)
 servo = 0
 gps_err_cont = 0
+aba_tf = True
 try:
 	while True:
 		'''if sentence[18] == 'V':
@@ -293,14 +337,13 @@ try:
 		'''
 		now = time.time()
 		cb = pi.callback(end, pigpio.FALLING_EDGE, cb_interrupt)
-		pi.set_PWM_dutycycle(gpio_pin0, (1.85/20)*255)
 
 		while gps_tf == False:
-			pi.write(in2, 0)
+			pi.write(in2, 1)
 			print("GPS_ERROR")
 			time.sleep(1.0)
 			pi.write(in2, 1)
-			i = 50
+			#i = 150
 
 		if x_angle < 90:
 			i= i+8
@@ -319,25 +362,27 @@ try:
 			pi.write(in1, 0)
 			pi.write(in2, 1)
 			i = 50
-
+		if speed > 1:
+			dist_cnt = 0
 		if speed > 0.3:
 			pi.write(led3, 1)
-			dist_cnt = 0
-			if float(dir) - azi < -90:
+			if float(dir) - azi < -45:
 				#pi.hardware_PWM(gpio_pin0, 50,( 1.75/20.0) * 1000000)
-				pi.set_PWM_dutycycle(gpio_pin0, (2.1/20)*255)
+				pi.set_PWM_dutycycle(gpio_pin0, (1.8/20)*255)
 				print("RRR"+str(float(dir) - azi))
 				servo = 2.1
-			elif float(dir) - azi > 90:
+			elif float(dir) - azi > 45:
 				#pi.hardware_PWM(gpio_pin0, 50,( 1.3/20.0) * 1000000)
-				pi.set_PWM_dutycycle(gpio_pin0, (2.0/20)*255)
+				pi.set_PWM_dutycycle(gpio_pin0, (1.4/20)*255)
 				print("LLL"+str(float(dir) - azi))
 				servo = 2.1
 			else:
 				#pi.hardware_PWM(gpio_pin0, 50,( 1.5/20.0) * 1000000)
-				pi.set_PWM_dutycycle(gpio_pin0, (1.85/20)*255)
+				pi.set_PWM_dutycycle(gpio_pin0, (1.55/20)*255)
 				print('SSS'+str(float(dir) - azi))
 				servo = 1.75
+		else:
+			pi.set_PWM_dutycycle(gpio_pin0, (1.55/20)*255)
 		print(sentence)
 		dist_cnt = dist_cnt + 1
 		f.write(gps_time+','+str(lat)+','+str(lon)+','+str(dist)+','+str(speed)+','+str(dir)+','+str(x_angle)+','+str(i)+','+str(servo)+'\r\n')
@@ -354,27 +399,40 @@ try:
 			pi.write(led3, 0)
 			pi.write(led3, 0)
 			raise KeyboardInterrupt
-		if dist_cnt == 480:
+		if dist_cnt == 30:
 			print("wadachi")
-			abareru(1)
+			if aba_tf == True:
+				abareru(1,3)
+				abareru(2,3)
+				abareru(3,3)
+				aba_tf = False
+			else :
+                                abareru(1,1)
+                                abareru(2,1)
+                                abareru(3,1)
+                                abareru(1,2)
+                                abareru(2,2)
+                                abareru(3,2)
+                                aba_tf = True
 			i = 50
 		print("To goal:"+str(dist)+"[m]")
 		print("To goal:"+str(azi)+"[deg]")
 		print("now:"+str(speed)+"[km/s]")
 		print("now:"+dir+"[deg]")
-		#print("x_angle:"+str(x_angle))
+		print("x_angle:"+str(x_angle))
 		print("duty:"+ str(i))
+		print(str(dist_cnt))
 		#print((str(num[4])+','+str(num[5]))
 		s.write(str(lat).encode()+b','+str(lon).encode()+b'\r\n')
 		#time.sleep(0.2)
 		#s.write(str(dir).encode()+b','+str(x_angle).encode()+b','+str(i).encode()+b','+str(servo).encode()+b'\r\n')
-		sleepTime = 0.25 - (time.time() - now)
+		sleepTime = 0.5 - (time.time() - now)
 		if sleepTime < 0.0:
 			continue
 		time.sleep(sleepTime)
 except KeyboardInterrupt:
 			pi.set_PWM_dutycycle(pin_sb, 0)
-			pi.set_PWM_dutycycle(gpio_pin0, (1.75/20)*255)
+			pi.set_PWM_dutycycle(gpio_pin0, (1.55/20)*255)
 			pi.write(led1, 0)
 			pi.write(led2, 0)
 			pi.write(led3, 0)
