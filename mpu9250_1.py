@@ -1,7 +1,7 @@
 #!/usr/bin/python -u
 # -*- coding: utf-8 -*-
 
-import smbus
+import smbus2 as smbus
 import time
 
 # Strawberry Linux社の「MPU-9250」からI2Cでデータを取得するクラス(python 2)
@@ -59,10 +59,10 @@ class SL_MPU9250:
     # レジスタを初期設定に戻します。
     def resetRegister(self):
         if self.MAG_ACCESS == True:
-            self.bus.write_i2c_block_data(self.addrAK8963, 0x0B, [0x01])    
+            self.bus.write_i2c_block_data(self.addrAK8963, 0x0B, [0x01])
         self.bus.write_i2c_block_data(self.address, 0x6B, [0x80])
         self.MAG_ACCESS = False
-        time.sleep(0.1)     
+        time.sleep(0.1)
 
     # レジスタをセンシング可能な状態にします。
     def powerWakeUp(self):
@@ -75,7 +75,7 @@ class SL_MPU9250:
         time.sleep(0.1)
 
     # 磁気センサのレジスタを設定する
-    def setMagRegister(self, _mode, _bit):      
+    def setMagRegister(self, _mode, _bit):
         if self.MAG_ACCESS == False:
             # 磁気センサへのアクセスが有効になっていないので例外を上げる
             raise Exception('001 Access to a sensor is invalid.')
@@ -173,11 +173,11 @@ class SL_MPU9250:
         return
 
     # 加速度センサのLowPassFilterを設定します。
-    # def setAccelLowPassFilter(self,val):      
+    # def setAccelLowPassFilter(self,val):
 
     #センサからのデータはそのまま使おうとするとunsignedとして扱われるため、signedに変換(16ビット限定）
     def u2s(self,unsigneddata):
-        if unsigneddata & (0x01 << 15) : 
+        if unsigneddata & (0x01 << 15) :
             return -1 * ((unsigneddata ^ 0xffff) + 1)
         return unsigneddata
 
@@ -262,25 +262,25 @@ class SL_MPU9250:
         return ((raw - self.offsetRoomTemp) / self.tempSensitivity) + 21
 
     def selfTestMag(self):
-        print "start mag sensor self test"
+        print ("start mag sensor self test")
         self.setMagRegister('SELF_TEST','16bit')
         self.bus.write_i2c_block_data(self.addrAK8963, 0x0C, [0x40])
         time.sleep(1.0)
         data = self.getMag()
 
-        print data
+        print (str(data))
 
         self.bus.write_i2c_block_data(self.addrAK8963, 0x0C, [0x00])
         self.setMagRegister('POWER_DOWN','16bit')
         time.sleep(1.0)
-        print "end mag sensor self test"
+        print ("end mag sensor self test")
         return
 
     # 加速度センサを較正する
     # 本当は緯度、高度、地形なども考慮する必要があるとは思うが、簡略で。
     # z軸方向に正しく重力がかかっており、重力以外の加速度が発生していない前提
     def calibAccel(self, _count=1000):
-        print "Accel calibration start"
+        print ("Accel calibration start")
         _sum    = [0,0,0]
 
         # 実データのサンプルを取る
@@ -297,18 +297,18 @@ class SL_MPU9250:
 	#print self.offsetAccelX
 	#print self.offsetAccelY
 	#print self.offsetAccelZ
-	self.offsetAccelX  = -0.018942626
-	self.offsetAccelY  = -0.009859863
-	self.offsetAccelX  = -0.000404052 #2018/06/10 @自宅床のオフセット値
+        self.offsetAccelX  = -0.018942626
+        self.offsetAccelY  = -0.009859863
+        self.offsetAccelX  = -0.000404052 #2018/06/10 @自宅床のオフセット値
 
         # オフセット値をレジスタに登録したいけれど、動作がわからないので実装保留
-        print "Accel calibration complete"
+        print ("Accel calibration complete")
         return self.offsetAccelX, self.offsetAccelY, self.offsetAccelZ
 
     # ジャイロセンサを較正する
     # 各軸に回転が発生していない前提
     def calibGyro(self, _count=1000):
-        print "Gyro calibration start"
+        print ("Gyro calibration start")
         _sum    = [0,0,0]
 
         # 実データのサンプルを取る
@@ -325,5 +325,5 @@ class SL_MPU9250:
 
         # オフセット値をレジスタに登録したいけれど、動作がわからないので実装保留
 
-        print "Gyro calibration complete"
+        print ("Gyro calibration complete")
         return self.offsetGyroX, self.offsetGyroY, self.offsetGyroZ
