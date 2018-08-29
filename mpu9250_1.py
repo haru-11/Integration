@@ -1,7 +1,7 @@
 #!/usr/bin/python -u
 # -*- coding: utf-8 -*-
 
-import smbus
+import smbus2 as smbus
 import time
 
 # Strawberry Linux社の「MPU-9250」からI2Cでデータを取得するクラス(python 2)
@@ -75,7 +75,7 @@ class SL_MPU9250:
         time.sleep(0.1)
 
     # 磁気センサのレジスタを設定する
-    def setMagRegister(self, _mode, _bit):      
+    def setMagRegister(self, _mode, _bit):
         if self.MAG_ACCESS == False:
             # 磁気センサへのアクセスが有効になっていないので例外を上げる
             raise Exception('001 Access to a sensor is invalid.')
@@ -173,11 +173,11 @@ class SL_MPU9250:
         return
 
     # 加速度センサのLowPassFilterを設定します。
-    # def setAccelLowPassFilter(self,val):      
+    # def setAccelLowPassFilter(self,val):
 
     #センサからのデータはそのまま使おうとするとunsignedとして扱われるため、signedに変換(16ビット限定）
     def u2s(self,unsigneddata):
-        if unsigneddata & (0x01 << 15) : 
+        if unsigneddata & (0x01 << 15) :
             return -1 * ((unsigneddata ^ 0xffff) + 1)
         return unsigneddata
 
