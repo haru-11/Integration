@@ -22,8 +22,8 @@ PTC1 = 6
 x_angle = 0.0
 speed = 0.0
 pi = 3.1415926535
-goal_latitude = 35.6576231 	#ゴールの緯度（10進法，南緯は負の数）
-goal_longitude = 139.3670235	#ゴールの経度（10進法，西経は負の数）
+goal_latitude = 35.661408 	#ゴールの緯度（10進法，南緯は負の数）
+goal_longitude = 139.366107	#ゴールの経度（10進法，西経は負の数）
 radius = 6378.137	#地球の半径km
 
 dist_cnt = 0
@@ -65,7 +65,7 @@ pi.write(led3, 0)
 pi.write(led4, 0)
 pi.write(PTC1 ,0)
 
-s = serial.Serial('/dev/serial0', 115200, timeout=10)
+s = serial.Serial('/dev/serial0', 38400, timeout=10)
 s.write(b"serial ok!\r\n")
 x_angle = 0
 gps_tf = False
@@ -214,7 +214,7 @@ def abareru(mode,servo):
 		pi.write(in1, 0)
 		pi.write(in2, 1)
 		pi.set_PWM_dutycycle(pin_sb, 255)
-		time.sleep(2.0)
+		time.sleep(10.0)
 		pi.set_PWM_dutycycle(pin_sb, 0)
 		pi.write(in1, 1)
 		pi.write(in2, 1)
@@ -222,10 +222,10 @@ def abareru(mode,servo):
 		pi.write(in1, 1)
 		pi.write(in2, 0)
 		pi.set_PWM_dutycycle(pin_sb, 255)
-		time.sleep(2.0)
+		time.sleep(10.0)
 		pi.set_PWM_dutycycle(pin_sb, 0)
-		pi.write(in1, 1)
-		pi.write(in2, 1)
+		pi.write(in1, 0)
+		pi.write(in2, 0)
 		time.sleep(1.0)
 
 	elif mode == 2:
@@ -242,8 +242,8 @@ def abareru(mode,servo):
                 pi.set_PWM_dutycycle(pin_sb, 255)
                 time.sleep(2.0)
                 pi.set_PWM_dutycycle(pin_sb, 0)
-                pi.write(in1, 1)
-                pi.write(in2, 1)
+                pi.write(in1, 0)
+                pi.write(in2, 0)
                 time.sleep(1.0)
 
 	elif mode == 3:
@@ -260,8 +260,8 @@ def abareru(mode,servo):
                 pi.set_PWM_dutycycle(pin_sb, 255)
                 time.sleep(2.0)
                 pi.set_PWM_dutycycle(pin_sb, 0)
-                pi.write(in1, 1)
-                pi.write(in2, 1)
+                pi.write(in1, 0)
+                pi.write(in2, 0)
                 time.sleep(1.0)
 
 
@@ -373,7 +373,7 @@ try:
 				servo = 2.1
 			elif float(dir) - azi > 45:
 				#pi.hardware_PWM(gpio_pin0, 50,( 1.3/20.0) * 1000000)
-				pi.set_PWM_dutycycle(gpio_pin0, (1.4/20)*255)
+				pi.set_PWM_dutycycle(gpio_pin0, (1.35/20)*255)
 				print("LLL"+str(float(dir) - azi))
 				servo = 2.1
 			else:
@@ -405,6 +405,8 @@ try:
 				abareru(1,3)
 				abareru(2,3)
 				abareru(3,3)
+				pi.write(in1,0)
+				pi.write(in2,1)
 				aba_tf = False
 			else :
                                 abareru(1,1)
@@ -413,8 +415,11 @@ try:
                                 abareru(1,2)
                                 abareru(2,2)
                                 abareru(3,2)
+                                pi.write(in1,0)
+                                pi.write(in2,1)
                                 aba_tf = True
 			i = 50
+			dist_cnt = 0
 		print("To goal:"+str(dist)+"[m]")
 		print("To goal:"+str(azi)+"[deg]")
 		print("now:"+str(speed)+"[km/s]")
