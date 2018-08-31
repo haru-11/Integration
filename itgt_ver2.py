@@ -65,7 +65,7 @@ pi.write(led3, 0)
 pi.write(led4, 0)
 pi.write(PTC1 ,0)
 
-s = serial.Serial('/dev/serial0', 115200, timeout=10)
+s = serial.Serial('/dev/serial0', 38400, timeout=10)
 s.write(b"serial ok!\r\n")
 x_angle = 0
 gps_tf = False
@@ -102,48 +102,34 @@ def cal_gps(radius, goal_latitude, goal_longitude, now_lat, now_lon):
 
 def get_axis():
 	global x_angle
+
+	i = 0
+	data_accx = [0]
+	data_accy = [0]
+	data_accz = [0]
 	while True:
-
-		i = 0
-		data_accx = [0]
-		data_accy = [0]
-		data_accz = [0]
-		while True:
-			now=time.time()
-			acc=mpu.getAccel()
-			data_accx.append(acc[0])
-			data_accy.append(acc[1])
-			data_accz.append(acc[2])
-
-			if i == 10:
-				medianx = np.median(data_accx)
-				mediany = np.median(data_accy)
-				medianz = np.median(data_accz)
-				break
-			i = i + 1
-			sleepTime = 0.05 - (time.time() - now)
-			if sleepTime < 0.0:
-				continue
-			time.sleep(sleepTime)
-		#gyr = mpu.getGyro()
-		#mag = mpu.getMag()
+		now=time.time()
+		acc=mpu.getAccel()
+		data_accx.append(acc[0])
+		data_accy.append(acc[1])
+		data_accz.append(acc[2])
+		if i == 10:
+			medianx = np.median(data_accx)
+			mediany = np.median(data_accy)
+			medianz = np.median(data_accz)
+			break
+		i = i + 1
+		sleepTime = 0.05 - (time.time() - now)
+		if sleepTime < 0.0:
+			continue
+		time.sleep(sleepTime)
 
 		#x_angle = math.degrees( math.atan2( acc[0], math.sqrt(acc[1] ** 2 + acc[2] ** 2 )))
 		#y_angle = math.degrees( math.atan2( acc[1], math.sqrt(acc[0] ** 2 + acc[2] ** 2 )))
-		x_angle = math.degrees( math.atan2( medianx, math.sqrt(mediany ** 2 + medianz ** 2 )))
-		if medianz>0:
-			x_angle = (90-x_angle) + 90
-		y_angle = math.degrees( math.atan2( mediany, math.sqrt(medianx ** 2 + medianz ** 2 )))
-#		print('x:'+ str(x_angle))
-#       	print('y:'+ str(y_angle))
-#       	print('s:'+ str(sita))
-#       	print ('%+8.7f,%+8.7f,%+8.7f' % (mag[0],mag[1],mag[2]))
-#       	time.sleep(1.0)
-
-
-mputhread = threading.Thread(target=get_axis, args=()) # 上の関数を実行するスレッドを生成
-mputhread.daemon = True
-mputhread.start() # スレッドを起動
+	x_angle = math.degrees( math.atan2( medianx, math.sqrt(mediany ** 2 + medianz ** 2 )))
+	if medianz>0:
+		x_angle = (90-x_angle) + 90
+	y_angle = math.degrees( math.atan2( mediany, math.sqrt(medianx ** 2 + medianz ** 2 )))
 
 def cb_interrupt(gpio, level, tick):
 	print('THE END')
@@ -159,7 +145,7 @@ def cb_interrupt(gpio, level, tick):
 
 def abareru(mode,servo):
 	if servo == 1:
-		pi.set_PWM_dutycycle(gpio_pin0, (1.7/20)*255)
+		pi.set_PWM_dutycycle(gpio_pin0, (1.8/20)*255)
 	elif servo == 2:
 		pi.set_PWM_dutycycle(gpio_pin0, (1.4/20)*255)
 	elif servo == 3:
@@ -283,11 +269,15 @@ s.readline()
 
 def main():
 	try:
+		i = 50
+		dist_cnt = 0
+		global se
 		while True:
 
 			now = time.time()
 			cb = pi.callback(end, pigpio.FALLING_EDGE, cb_interrupt)
-
+			get_axis()
+			print(str(x_angle))
 			sentence = s.readline().decode('utf-8')
 			if sentence[0] != '$' or sentence[1] != 'G' or sentence[2] != 'P' or sentence[3] != 'R' or sentence[4] != 'M' or sentence[5] != 'C':
 				gps_tf = False
@@ -315,12 +305,8 @@ def main():
 			dist, azi = cal_gps(radius, goal_latitude, goal_longitude, lat, lon)
 			gps_tf = True
 
-			while gps_tf == False:
-				pi.write(in2, 1)
-				print("GPS_ERROR")
-				time.sleep(1.0)
-				pi.write(in2, 1)
-				#i = 150
+			if gps_tf == False:
+				continue
 
 			if x_angle < 90:
 				i= i+8
@@ -347,22 +333,22 @@ def main():
 					#pi.hardware_PWM(gpio_pin0, 50,( 1.75/20.0) * 1000000)
 					pi.set_PWM_dutycycle(gpio_pin0, (1.8/20)*255)
 					print("RRR"+str(float(dir) - azi))
-					servo = 2.1
+					se = 2.1
 				elif float(dir) - azi > 45:
 					#pi.hardware_PWM(gpio_pin0, 50,( 1.3/20.0) * 1000000)
-					pi.set_PWM_dutycycle(gpio_pin0, (1.4/20)*255)
+					pi.set_PWM_dutycycle(gpio_pin0, (1.35/20)*255)
 					print("LLL"+str(float(dir) - azi))
-					servo = 2.1
+					se = 2.1
 				else:
 					#pi.hardware_PWM(gpio_pin0, 50,( 1.5/20.0) * 1000000)
 					pi.set_PWM_dutycycle(gpio_pin0, (1.55/20)*255)
 					print('SSS'+str(float(dir) - azi))
-					servo = 1.75
+					se = 1.75
 			else:
 				pi.set_PWM_dutycycle(gpio_pin0, (1.55/20)*255)
 			print(sentence)
 			dist_cnt = dist_cnt + 1
-			f.write(gps_time+','+str(lat)+','+str(lon)+','+str(dist)+','+str(speed)+','+str(dir)+','+str(x_angle)+','+str(i)+','+str(servo)+'\r\n')
+			f.write(gps_time+','+str(lat)+','+str(lon)+','+str(dist)+','+str(speed)+','+str(dir)+','+str(x_angle)+','+str(i)+','+str(se)+'\r\n')
 			if dist < 0.005:
 				pi.write(in1, 0)
 				pi.write(in2, 0)
@@ -382,6 +368,8 @@ def main():
 					abareru(1,3)
 					abareru(2,3)
 					abareru(3,3)
+					pi.write(in1, 0)
+					pi.write(in1, 1)
 					aba_tf = False
 				else :
 					abareru(1,1)
@@ -390,7 +378,10 @@ def main():
 					abareru(1,2)
 					abareru(2,2)
 					abareru(3,2)
+					pi.write(in1, 0)
+					pi.write(in1, 1)
 					aba_tf = True
+				dist_cnt = 0
 				i = 50
 			print("To goal:"+str(dist)+"[m]")
 			print("To goal:"+str(azi)+"[deg]")
