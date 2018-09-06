@@ -1,7 +1,7 @@
 #!/usr/bin/python -u
 # -*- coding: utf-8 -*-
 
-import smbus2 as smbus
+import smbus
 import time
 
 # Strawberry Linux社の「MPU-9250」からI2Cでデータを取得するクラス(python 2)
