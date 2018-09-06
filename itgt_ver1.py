@@ -22,8 +22,8 @@ PTC1 = 6
 x_angle = 0.0
 speed = 0.0
 pi = 3.1415926535
-goal_latitude = 35.661408 	#ゴールの緯度（10進法，南緯は負の数）
-goal_longitude = 139.366107	#ゴールの経度（10進法，西経は負の数）
+goal_latitude = 35.6576231 	#ゴールの緯度（10進法，南緯は負の数）
+goal_longitude = 139.3670235	#ゴールの経度（10進法，西経は負の数）
 radius = 6378.137	#地球の半径km
 
 dist_cnt = 0
@@ -105,7 +105,7 @@ def get_gps():
 	try:
 		while True:
 
-			sentence = s.readline().decode('utf-8')
+			sentence = s.readline()
 			if sentence[0] != '$' or sentence[1] != 'G' or sentence[2] != 'P' or sentence[3] != 'R' or sentence[4] != 'M' or sentence[5] != 'C':
 				gps_tf = False
 				continue
@@ -265,7 +265,7 @@ def abareru(mode,servo):
                 time.sleep(1.0)
 
 
-i = 0
+i = 10
 while i > 0:
         d = adc.get_ADC()
         s.write(str(i).encode()+b"sec,"+str(d).encode()+b"\r\n")
@@ -281,7 +281,7 @@ while True:
                 break
         time.sleep(1.0)
 pi.write(PTC1,0)
-i=2
+i=30
 while i > 0:
         d = adc.get_ADC()
         s.write(str(i).encode()+b"sec,"+str(d).encode()+b"\r\n")
@@ -295,7 +295,7 @@ s.write(b"release\r\n")
 pi.write(in1, 0)
 pi.write(in2, 1)
 
-i = 0
+i = 5
 
 while i > 0:
 	pi.write(in1, 0)
