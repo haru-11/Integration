@@ -319,7 +319,7 @@ while True:
                 break
         time.sleep(1.0)
 pi.write(PTC1,0)
-i=1800
+i=18
 while i > 0:
         d = adc.get_ADC()
         s.write(str(i)+"sec,"+str(lat)+","+str(lon)+"\r\n")
@@ -333,7 +333,7 @@ s.write("release\r\n")
 pi.write(in1, 0)
 pi.write(in2, 1)
 
-i = 6
+i = 1
 
 while i > 0:
 	pi.write(in1, 0)
@@ -406,26 +406,76 @@ try:
 			dist_cnt = 0
 		if speed > 1.0:
 			pi.write(led3, 1)
-			if float(dir) - azi < -45:
-				#pi.hardware_PWM(gpio_pin0, 50,( 1.75/20.0) * 1000000)
-				pi.set_PWM_dutycycle(gpio_pin0, (2.1/20)*255)
-				print("RRR"+str(float(dir) - azi))
-				servo = 2.1
-			elif float(dir) - azi > 45:
-				#pi.hardware_PWM(gpio_pin0, 50,( 1.3/20.0) * 1000000)
-				pi.set_PWM_dutycycle(gpio_pin0, (1.5/20)*255)
-				print("LLL"+str(float(dir) - azi))
-				servo = 2.1
+			if float(dir) < 180:
+				a = float(dir) + 180
+				if float(dir) < 45:
+					if (float(dir) + 45) < azi and a > azi:
+						#pi.hardware_PWM(gpio_pin0, 50,( 1.75/20.0) * 1000000)
+						pi.set_PWM_dutycycle(gpio_pin0, (1.8/20)*255)
+						print("RRR"+str(float(dir) - azi))
+						servo = 2.1
+					elif (360 - 45 + float(dir)) > azi and a < azi:
+                                                pi.set_PWM_dutycycle(gpio_pin0, (1.65/20)*255)
+                                                print("LLL"+str(float(dir) - azi))
+                                                servo = 2.1
+					else:
+                                                #pi.hardware_PWM(gpio_pin0, 50,( 1.5/20.0) * 1000000)
+                                                pi.set_PWM_dutycycle(gpio_pin0, (1.8/20)*255)
+                                                print('SSS'+str(float(dir) - azi))
+                                                servo = 1.75
+
+				else:
+					if (float(dir) + 45) < azi and a > azi:
+						#pi.hardware_PWM(gpio_pin0, 50,( 1.75/20.0) * 1000000)
+						pi.set_PWM_dutycycle(gpio_pin0, (1.8/20)*255)
+						print("RRR"+str(float(dir) - azi))
+						servo = 2.1
+					elif (float(dir) - 45) < azi and (float(dir) + 45) > azi:
+                                                #pi.hardware_PWM(gpio_pin0, 50,( 1.5/20.0) * 1000000)
+                                                pi.set_PWM_dutycycle(gpio_pin0, (1.8/20)*255)
+                                                print('SSS'+str(float(dir) - azi))
+                                                servo = 1.75
+					else:
+                                                pi.set_PWM_dutycycle(gpio_pin0, (1.65/20)*255)
+                                                print("LLL"+str(float(dir) - azi))
+                                                servo = 2.1
 			else:
-				#pi.hardware_PWM(gpio_pin0, 50,( 1.5/20.0) * 1000000)
-				pi.set_PWM_dutycycle(gpio_pin0, (1.8/20)*255)
-				print('SSS'+str(float(dir) - azi))
-				servo = 1.75
+				a = float(dir) - 180
+				if float(dir) > 315:
+					if a < azi and (float(dir) - 45 ) > azi:
+                                                pi.set_PWM_dutycycle(gpio_pin0, (1.65/20)*255)
+                                                print("LLL"+str(float(dir) - azi))
+                                                servo = 2.1
+					elif a > azi and (45 - (360 - float(dir))) < azi:
+						#pi.hardware_PWM(gpio_pin0, 50,( 1.75/20.0) * 1000000)
+						pi.set_PWM_dutycycle(gpio_pin0, (1.8/20)*255)
+						print("RRR"+str(float(dir) - azi))
+						servo = 2.1
+					else:
+                                                #pi.hardware_PWM(gpio_pin0, 50,( 1.5/20.0) * 1000000)
+                                                pi.set_PWM_dutycycle(gpio_pin0, (1.8/20)*255)
+                                                print('SSS'+str(float(dir) - azi))
+                                                servo = 1.75
+				else:
+					if (float(dir) - 45) < azi and (float(dir) + 45) > azi:
+                                                #pi.hardware_PWM(gpio_pin0, 50,( 1.5/20.0) * 1000000)
+                                                pi.set_PWM_dutycycle(gpio_pin0, (1.8/20)*255)
+                                                print('SSS'+str(float(dir) - azi))
+                                                servo = 1.75
+					elif (float(dir) - 45) > azi and a < azi:
+						#pi.hardware_PWM(gpio_pin0, 50,( 1.75/20.0) * 1000000)
+						pi.set_PWM_dutycycle(gpio_pin0, (1.65/20)*255)
+						print("LLL"+str(float(dir) - azi))
+						servo = 2.1
+					else:
+                                                pi.set_PWM_dutycycle(gpio_pin0, (1.8/20)*255)
+                                                print("RRR"+str(float(dir) - azi))
+                                                servo = 1.8
 		else:
 			pi.set_PWM_dutycycle(gpio_pin0, (1.8/20)*255)
-		print(sentence)
-		dist_cnt = dist_cnt + 1
-		f.write(gps_time+','+str(lat)+','+str(lon)+','+str(dist)+','+str(speed)+','+str(dir)+','+str(x_angle)+','+str(i)+','+str(servo)+'\r\n')
+			print(sentence)
+			dist_cnt = dist_cnt + 1
+			f.write(gps_time+','+str(lat)+','+str(lon)+','+str(dist)+','+str(speed)+','+str(dir)+','+str(x_angle)+','+str(i)+','+str(servo)+'\r\n')
 		if dist < 0.005:
 			pi.write(in1, 0)
 			pi.write(in2, 0)
@@ -486,6 +536,7 @@ except KeyboardInterrupt:
 			pi.write(led3, 0)
 			pi.write(in1, 0)
 			pi.write(in2, 0)
+			pi.write(PTC1,1)
 			f.close()
 			s.close()
 			s.write("KeyboardInterrupt,close(serial)\r\n")
