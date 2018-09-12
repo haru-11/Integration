@@ -206,9 +206,9 @@ def abareru(mode,servo):
 	if servo == 1:
 		pi.set_PWM_dutycycle(gpio_pin0, (1.8/20)*255)
 	elif servo == 2:
-		pi.set_PWM_dutycycle(gpio_pin0, (1.5/20)*255)
+		pi.set_PWM_dutycycle(gpio_pin0, (1.7/20)*255)
 	elif servo == 3:
-		pi.set_PWM_dutycycle(gpio_pin0, (2.1/20)*255)
+		pi.set_PWM_dutycycle(gpio_pin0, (1.9/20)*255)
         if mode == 0:
                 print "2sec"
                 pi.write(in1, 0)
@@ -231,7 +231,7 @@ def abareru(mode,servo):
 		print "140"
 		pi.write(in1, 0)
 		pi.write(in2, 1)
-		pi.set_PWM_dutycycle(pin_sb, 140)
+		pi.set_PWM_dutycycle(pin_sb, 170)
 		time.sleep(10.0)
 		pi.set_PWM_dutycycle(pin_sb, 0)
 		pi.write(in1, 1)
@@ -239,7 +239,7 @@ def abareru(mode,servo):
 		#time.sleep(1.0)
 		pi.write(in1, 1)
 		pi.write(in2, 0)
-		pi.set_PWM_dutycycle(pin_sb, 140)
+		pi.set_PWM_dutycycle(pin_sb, 170)
 		time.sleep(10.0)
 		pi.set_PWM_dutycycle(pin_sb, 0)
 		pi.write(in1, 0)
@@ -250,7 +250,7 @@ def abareru(mode,servo):
 		print "170"
                 pi.write(in1, 0)
                 pi.write(in2, 1)
-                pi.set_PWM_dutycycle(pin_sb, 170)
+                pi.set_PWM_dutycycle(pin_sb, 200)
                 time.sleep(10.0)
                 pi.set_PWM_dutycycle(pin_sb, 0)
                 pi.write(in1, 1)
@@ -258,7 +258,7 @@ def abareru(mode,servo):
                 #time.sleep(1.0)
                 pi.write(in1, 0)
                 pi.write(in2, 1)
-                pi.set_PWM_dutycycle(pin_sb, 170)
+                pi.set_PWM_dutycycle(pin_sb, 200)
                 time.sleep(10.0)
                 pi.set_PWM_dutycycle(pin_sb, 0)
                 pi.write(in1, 0)
@@ -269,7 +269,7 @@ def abareru(mode,servo):
 		print "200"
                 pi.write(in1, 1)
                 pi.write(in2, 0)
-                pi.set_PWM_dutycycle(pin_sb, 200)
+                pi.set_PWM_dutycycle(pin_sb, 230)
                 time.sleep(10.0)
                 pi.set_PWM_dutycycle(pin_sb, 0)
                 pi.write(in1, 1)
@@ -277,7 +277,7 @@ def abareru(mode,servo):
                 #time.sleep(1.0)
                 pi.write(in1, 1)
                 pi.write(in2, 0)
-                pi.set_PWM_dutycycle(pin_sb, 200)
+                pi.set_PWM_dutycycle(pin_sb, 230)
                 time.sleep(10.0)
                 pi.set_PWM_dutycycle(pin_sb, 0)
                 pi.write(in1, 0)
@@ -288,7 +288,7 @@ def abareru(mode,servo):
 		print "250"
                 pi.write(in1, 1)
                 pi.write(in2, 0)
-                pi.set_PWM_dutycycle(pin_sb, 250)
+                pi.set_PWM_dutycycle(pin_sb, 255)
                 time.sleep(10.0)
                 pi.set_PWM_dutycycle(pin_sb, 0)
                 pi.write(in1, 1)
@@ -296,7 +296,7 @@ def abareru(mode,servo):
                 #time.sleep(1.0)
                 pi.write(in1, 1)
                 pi.write(in2, 0)
-                pi.set_PWM_dutycycle(pin_sb, 250)
+                pi.set_PWM_dutycycle(pin_sb, 255)
                 time.sleep(10.0)
                 pi.set_PWM_dutycycle(pin_sb, 0)
                 pi.write(in1, 0)
@@ -319,7 +319,7 @@ while True:
                 break
         time.sleep(1.0)
 pi.write(PTC1,0)
-i=18
+i=1800
 while i > 0:
         d = adc.get_ADC()
         s.write(str(i)+"sec,"+str(lat)+","+str(lon)+"\r\n")
@@ -333,7 +333,7 @@ s.write("release\r\n")
 pi.write(in1, 0)
 pi.write(in2, 1)
 
-i = 1
+i = 6
 
 while i > 0:
 	pi.write(in1, 0)
@@ -411,66 +411,66 @@ try:
 				if float(dir) < 45:
 					if (float(dir) + 45) < azi and a > azi:
 						#pi.hardware_PWM(gpio_pin0, 50,( 1.75/20.0) * 1000000)
-						pi.set_PWM_dutycycle(gpio_pin0, (1.8/20)*255)
+						pi.set_PWM_dutycycle(gpio_pin0, (1.9/20)*255)
 						print("RRR"+str(float(dir) - azi))
-						servo = 2.1
+						servo = 1.9
 					elif (360 - 45 + float(dir)) > azi and a < azi:
-                                                pi.set_PWM_dutycycle(gpio_pin0, (1.65/20)*255)
+                                                pi.set_PWM_dutycycle(gpio_pin0, (1.7/20)*255)
                                                 print("LLL"+str(float(dir) - azi))
-                                                servo = 2.1
+                                                servo = 1.7
 					else:
                                                 #pi.hardware_PWM(gpio_pin0, 50,( 1.5/20.0) * 1000000)
                                                 pi.set_PWM_dutycycle(gpio_pin0, (1.8/20)*255)
                                                 print('SSS'+str(float(dir) - azi))
-                                                servo = 1.75
+                                                servo = 1.8
 
 				else:
 					if (float(dir) + 45) < azi and a > azi:
 						#pi.hardware_PWM(gpio_pin0, 50,( 1.75/20.0) * 1000000)
-						pi.set_PWM_dutycycle(gpio_pin0, (1.8/20)*255)
+						pi.set_PWM_dutycycle(gpio_pin0, (1.9/20)*255)
 						print("RRR"+str(float(dir) - azi))
-						servo = 2.1
+						servo = 1.9
 					elif (float(dir) - 45) < azi and (float(dir) + 45) > azi:
                                                 #pi.hardware_PWM(gpio_pin0, 50,( 1.5/20.0) * 1000000)
                                                 pi.set_PWM_dutycycle(gpio_pin0, (1.8/20)*255)
                                                 print('SSS'+str(float(dir) - azi))
-                                                servo = 1.75
+                                                servo = 1.8
 					else:
-                                                pi.set_PWM_dutycycle(gpio_pin0, (1.65/20)*255)
+                                                pi.set_PWM_dutycycle(gpio_pin0, (1.7/20)*255)
                                                 print("LLL"+str(float(dir) - azi))
-                                                servo = 2.1
+                                                servo = 1.7
 			else:
 				a = float(dir) - 180
 				if float(dir) > 315:
 					if a < azi and (float(dir) - 45 ) > azi:
-                                                pi.set_PWM_dutycycle(gpio_pin0, (1.65/20)*255)
+                                                pi.set_PWM_dutycycle(gpio_pin0, (1.7/20)*255)
                                                 print("LLL"+str(float(dir) - azi))
-                                                servo = 2.1
+                                                servo = 1.7
 					elif a > azi and (45 - (360 - float(dir))) < azi:
 						#pi.hardware_PWM(gpio_pin0, 50,( 1.75/20.0) * 1000000)
-						pi.set_PWM_dutycycle(gpio_pin0, (1.8/20)*255)
+						pi.set_PWM_dutycycle(gpio_pin0, (1.9/20)*255)
 						print("RRR"+str(float(dir) - azi))
-						servo = 2.1
+						servo = 1.9
 					else:
                                                 #pi.hardware_PWM(gpio_pin0, 50,( 1.5/20.0) * 1000000)
                                                 pi.set_PWM_dutycycle(gpio_pin0, (1.8/20)*255)
                                                 print('SSS'+str(float(dir) - azi))
-                                                servo = 1.75
+                                                servo = 1.8
 				else:
 					if (float(dir) - 45) < azi and (float(dir) + 45) > azi:
                                                 #pi.hardware_PWM(gpio_pin0, 50,( 1.5/20.0) * 1000000)
                                                 pi.set_PWM_dutycycle(gpio_pin0, (1.8/20)*255)
                                                 print('SSS'+str(float(dir) - azi))
-                                                servo = 1.75
+                                                servo = 1.8
 					elif (float(dir) - 45) > azi and a < azi:
 						#pi.hardware_PWM(gpio_pin0, 50,( 1.75/20.0) * 1000000)
-						pi.set_PWM_dutycycle(gpio_pin0, (1.65/20)*255)
+						pi.set_PWM_dutycycle(gpio_pin0, (1.7/20)*255)
 						print("LLL"+str(float(dir) - azi))
-						servo = 2.1
+						servo = 1.7
 					else:
-                                                pi.set_PWM_dutycycle(gpio_pin0, (1.8/20)*255)
+                                                pi.set_PWM_dutycycle(gpio_pin0, (1.9/20)*255)
                                                 print("RRR"+str(float(dir) - azi))
-                                                servo = 1.8
+                                                servo = 1.9
 		else:
 			pi.set_PWM_dutycycle(gpio_pin0, (1.8/20)*255)
 			print(sentence)
@@ -492,6 +492,7 @@ try:
 		if dist_cnt == 45:
 			print("wadachi")
 			if aba_tf == True:
+				f.close()
 				abareru(0,3)
 				abareru(1,1)
 				abareru(2,1)
@@ -499,6 +500,7 @@ try:
 				abareru(4,1)
 				pi.write(in1,0)
 				pi.write(in2,1)
+				f = open('test2.txt','a')
 				#aba_tf = False
 			else :
                                 abareru(1,3)
